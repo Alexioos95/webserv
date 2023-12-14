@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:33:30 by apayen            #+#    #+#             */
-/*   Updated: 2023/12/12 12:03:55 by apayen           ###   ########.fr       */
+/*   Updated: 2023/12/14 11:22:35 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 
 # include "Client.hpp" // Client's Class
 # include <cerrno> // Errno
+# include <vector> // Vector
 # include <string.h> // strerror
 # include <iostream> // std::cout
 # include <exception> // Exceptions
@@ -32,20 +33,25 @@ class Server
 	public:
 	// Constructors and destructor
 		Server(void);
+		Server(int const port);
 		~Server(void);
 	// Exceptions
 		class FailSocketException : public std::exception
 			{ public: const char	*what(void) const throw(); };
 		class FailBindException : public std::exception
 			{ public: const char	*what(void) const throw(); };
+		class FailFcntlException : public std::exception
+			{ public: const char	*what(void) const throw(); };
 		class FailListenException : public std::exception
+			{ public: const char	*what(void) const throw(); };
+		class FailSelectException : public std::exception
 			{ public: const char	*what(void) const throw(); };
 		class FailAcceptingClientException : public std::exception
 			{ public: const char	*what(void) const throw(); };
 		class ClientFailReadException : public std::exception
 			{ public: const char	*what(void) const throw(); };
 	// Getters
-		int	getSocket(void) const;
+		int		getSocket(void) const;
 	// Functions
 		void	run(void);
 
@@ -53,13 +59,20 @@ class Server
 	// Constructors
 		Server(Server const &rhs);
 	// Overload
-		Server	&operator=(Server const &rhs);
+		Server				&operator=(Server const &rhs);
 	// Attributes
 		const int			_port;
 		const int			_backlog;
 		int 				_socket;
 		struct sockaddr_in	_structsock;
 		int					_addr;
+		fd_set				_rset;
+		fd_set				_wset;
+		fd_set				_errset;
+		std::vector<Client>	_clients;
+	// Functions
+		void				setFDSet(void);
+		void				setNonblockingFD(int fd);
 };
 
 void	*ft_memset(void *s, int c, size_t n);

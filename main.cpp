@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:05:30 by apayen            #+#    #+#             */
-/*   Updated: 2023/12/12 12:05:24 by apayen           ###   ########.fr       */
+/*   Updated: 2023/12/14 10:38:15 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,7 +48,7 @@ int	main(int argc, char **argv)
 		if (errno != 0)
 			std::cout << strerror(errno);
 		std::cout << std::endl;
-		return (1);
+		// return (1);
 	}
 	return (0);
 }
