@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:33:30 by apayen            #+#    #+#             */
-/*   Updated: 2023/12/14 11:22:35 by apayen           ###   ########.fr       */
+/*   Updated: 2023/12/14 13:14:57 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,6 +47,8 @@ class Server
 		class FailSelectException : public std::exception
 			{ public: const char	*what(void) const throw(); };
 		class FailAcceptingClientException : public std::exception
+			{ public: const char	*what(void) const throw(); };
+		class CriticalErrorException : public std::exception
 			{ public: const char	*what(void) const throw(); };
 		class ClientFailReadException : public std::exception
 			{ public: const char	*what(void) const throw(); };

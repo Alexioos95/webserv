@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:41:38 by apayen            #+#    #+#             */
-/*   Updated: 2023/12/14 11:12:52 by apayen           ###   ########.fr       */
+/*   Updated: 2023/12/14 13:32:50 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,8 @@ class Client
 		Client(void);
 		Client(Client const &rhs);
 		~Client(void);
+	// Overload
+		Client			&operator=(Client const &rhs);
 	// Setters and Getters
 		void			setFD(int fd);
 		int				getFD(void) const;
@@ -34,8 +36,6 @@ class Client
 		char			*getBuffer(void) const;
 
 	private:
-	// Constructors and Destructor
-		Client	&operator=(Client const &rhs);
 	// Attributes
 		int				_fd;
 		unsigned int	_totalbytes;
