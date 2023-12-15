@@ -13,7 +13,7 @@
 #include "Client.hpp"
 
 // Constructors and Destructor
-Client::Client(void) : _fd(-1), _totalbytes(0), _sentbytes(0), _buffer(new char[4096 + 1])
+Client::Client(void) : _fd(-1), _totalbytes(0), _sentbytes(0), _toread(true)
 { ft_memset(this->_buffer, 0, sizeof(this->_buffer)); }
 
 Client::Client(Client const &rhs)
@@ -24,13 +24,16 @@ Client::Client(Client const &rhs)
 	this->_fd = rhs._fd;
 	this->_totalbytes = rhs._totalbytes;
 	this->_sentbytes = rhs._sentbytes;
-	this->_buffer = new char[4096 + 1];
-	while (i < 4096)
+	this->_toread = rhs._toread;
+	while (i < 2048)
 	{
 		this->_buffer[i] = rhs._buffer[i];
 		i++;
 	}
 	this->_buffer[i] = '\0';
+	this->_request = rhs._request;
+	this->_header = rhs._header;
+	this->_body = rhs._body;
 }
 
 // Overload
@@ -42,17 +45,20 @@ Client	&Client::operator=(Client const &rhs)
 	this->_fd = rhs._fd;
 	this->_totalbytes = rhs._totalbytes;
 	this->_sentbytes = rhs._sentbytes;
-	this->_buffer = new char[4096 + 1];
-	while (i < 4096)
+	this->_toread = rhs._toread;
+	while (i < 2048)
 	{
 		this->_buffer[i] = rhs._buffer[i];
 		i++;
 	}
 	this->_buffer[i] = '\0';
+	this->_request = rhs._request;
+	this->_header = rhs._header;
+	this->_body = rhs._body;
 	return (*this);
 }
 
-Client::~Client(void){ delete [] _buffer; }
+Client::~Client(void) { }
 
 // Setters and Getters
 void	Client::setFD(int fd)
@@ -60,9 +66,6 @@ void	Client::setFD(int fd)
 
 int	Client::getFD(void) const
 { return (this->_fd); }
-
-char	*Client::getBuffer(void) const
-{ return (this->_buffer); }
 
 void	Client::setTotalbytes(unsigned int tb)
 { this->_totalbytes = tb; }
@@ -75,3 +78,44 @@ void	Client::setSentbytes(unsigned int sb)
 
 unsigned int	Client::getSentbytes(void) const
 { return (this->_sentbytes); }
+
+bool	toRead(void) const
+{ return (this->_toread); }
+
+// Functions
+int	Client::read(void)
+{
+	int		bytes;
+	size_t	pos;
+	// Read from the client
+	bytes = recv(this->_fd, this->_buffer, 2048);
+	// Print
+	std::cout << this->_buffer << std::endl;
+	// Check if the client is finished
+	if (bytes == 0)
+	{
+		this->_toread = false;
+		return (bytes);
+	}
+	// If not, update values
+	this->_totalbytes = this->_totalbytes + bytes;
+	this->_request = this->_request + this->_buffer;
+	this->_sentbytes = 0;
+	// Search end sequence
+	pos = this->_request.find("\r\n\r\n");
+	if (pos != std::string::npos && this->_header.find("\r\n\r\n") == std::string::npos) // Check if it's the header...
+	{
+		this->_header = this->_request.substr(0, pos + 4);
+		std::cout << this->_header << std::endl;
+		this->_request.erase(0, pos + 4);
+		std::cout << this->_request << std::endl;
+	}
+	else if (pos != std::string::npos && this->_header.find("\r\n\r\n") == std::string::npos) // ... or the body
+	{
+		this->_body = this->_request.substr(0, pos + 4);
+		std::cout << this->_body << std::endl;
+		this->_request.erase(0, pos + 4);
+		std::cout << this->_request << std::endl;
+	}
+	return (bytes);
+}

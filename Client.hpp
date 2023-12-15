@@ -34,13 +34,20 @@ class Client
 		void			setSentbytes(unsigned int sb);
 		unsigned int	getSentbytes(void) const;
 		char			*getBuffer(void) const;
+		bool			toRead(void) const;
+	// Function
+		int				read(void);
 
 	private:
 	// Attributes
 		int				_fd;
 		unsigned int	_totalbytes;
 		unsigned int	_sentbytes;
-		char			*_buffer;
+		char			_buffer[2048 + 1];
+		std::string		_request;
+		std::string		_header;
+		std::string		_body;
+		bool			_toread;
 };
 
 void	*ft_memset(void *s, int c, size_t n);

@@ -37,8 +37,6 @@ const char	*Server::FailSelectException::what(void) const throw()
 const char	*Server::CriticalErrorException::what(void) const throw()
 { return ("A critical error happened on the server's socket: "); }
 
-
-
 // Constructors and Destructor
 Server::Server(void) : _port(8081), _backlog(9999)
 {
@@ -105,14 +103,13 @@ void	Server::setFDSet(void)
 	// Add fd of clients to their set
 	while (it != this->_clients.end())
 	{
-		if ((*it).getSentbytes() < (*it).getTotalbytes())
-			FD_SET((*it).getFD(), &this->_wset);
-		else
+		if ((*it).toRead())
 			FD_SET((*it).getFD(), &this->_rset);
+		else
+			FD_SET((*it).getFD(), &this->_wset);
 		FD_SET((*it).getFD(), &this->_errset);
 		it++;
 	}
-
 }
 
 void	Server::setNonblockingFD(int fd)
@@ -168,24 +165,21 @@ void	Server::run(void)
 					}
 					else if (FD_ISSET((*it).getFD(), &this->_rset)) // Client is ready for read
 					{
-						// Recv (Read for sockets)
-						bytes = recv((*it).getFD(), (*it).getBuffer(), 4096, 0);
+						// Read from the client
+						bytes = (*it).read();
+						// Check if client finished
 						if (bytes <= 0)
 						{
 							close((*it).getFD());
 							(*it).setFD(-1);
 							it = this->_clients.erase(it) - 1;
-							if (bytes == -1)
+							if (bytes == -1) // Check if an error occured during read
 								throw (ClientFailReadException());
 						}
-						(*it).setTotalbytes(bytes);
-						(*it).setSentbytes(0);
-						// Print
-						std::cout << (*it).getBuffer() << std::endl;
 					}
 					else if (FD_ISSET((*it).getFD(), &this->_wset)) // Client is ready for write
 					{
-						// Answer
+						// Write to the client
 						(*it).setTotalbytes(0);
 						std::string hello("HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 13\n\nHello world!\n");
 						write((*it).getFD(), hello.c_str(), strlen(hello.c_str()));
