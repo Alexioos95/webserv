@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:41:38 by apayen            #+#    #+#             */
-/*   Updated: 2023/12/14 13:32:50 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/03 09:10:00 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,8 @@
 # include <cerrno> // Errno
 # include <iostream> // std::cout
 # include <fcntl.h> // fnctl
+# include <sys/types.h> // recv
+# include <sys/socket.h> // recv
 
 class Client
 {

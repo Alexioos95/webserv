@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:38:00 by apayen            #+#    #+#             */
-/*   Updated: 2023/12/14 13:59:13 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/03 10:47:05 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,6 +59,7 @@ Server::Server(void) : _port(8081), _backlog(9999)
 	// Activate communication to wait clients
 	if (listen(this->_socket, this->_backlog) == -1)
 		throw (FailListenException());
+	std::cout << "[+] Succesfully created Server" << std::endl;
 }
 
 Server::Server(int const port) : _port(port), _backlog(9999)
@@ -76,12 +77,20 @@ Server::Server(int const port) : _port(port), _backlog(9999)
 	this->setNonblockingFD(this->_socket);
 	if (listen(this->_socket, this->_backlog) == -1)
 		throw (FailListenException());
+	std::cout << "[+] Succesfully created Server" << std::endl;
 }
 
 Server::~Server(void)
 {
-	if (this->_socket >= 0)
-		close(this->_socket);
+	std::vector<Client>::iterator	it;
+
+	while (it != this->_clients.end())
+	{
+		close((*it).getFD());
+		it = this->_clients.erase(it) - 1;
+		it++;
+	}
+	close(this->_socket);
 }
 
 // Functions
@@ -152,7 +161,7 @@ void	Server::run(void)
 					this->setNonblockingFD(cl.getFD()); // Blocks from reading multiple times in a short interval... ?
 					// Add the client to the vector
 					this->_clients.push_back(cl);
-					std::cout << "Accepted new client. Gave him fd " << cl.getFD() << std::endl;
+					std::cout << "[+] Accepted new client. Gave him fd " << cl.getFD() << std::endl;
 				}
 				it = this->_clients.begin();
 				while (it != this->_clients.end())
@@ -179,10 +188,11 @@ void	Server::run(void)
 					}
 					else if (FD_ISSET((*it).getFD(), &this->_wset)) // Client is ready for write
 					{
+						// Parse request
 						// Write to the client
-						(*it).setTotalbytes(0);
 						std::string hello("HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 13\n\nHello world!\n");
 						write((*it).getFD(), hello.c_str(), strlen(hello.c_str()));
+						(*it).setTotalbytes(0);
 					}
 					it++;
 				}

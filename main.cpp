@@ -6,11 +6,12 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:05:30 by apayen            #+#    #+#             */
-/*   Updated: 2023/12/14 10:38:15 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/03 11:06:41 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
+#include <signal.h>
 
 void	*ft_memset(void *s, int c, size_t n)
 {
@@ -27,7 +28,6 @@ void	*ft_memset(void *s, int c, size_t n)
 	return (s);
 }
 
-
 int	main(int argc, char **argv)
 {
 	try
@@ -38,6 +38,7 @@ int	main(int argc, char **argv)
 			return (1);
 		}
 		static_cast<void>(argv);
+		signal(SIGPIPE, SIG_IGN);
 		Server	serv;
 
 		serv.run();

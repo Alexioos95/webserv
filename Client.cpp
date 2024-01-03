@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:43:22 by apayen            #+#    #+#             */
-/*   Updated: 2023/12/14 13:34:49 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/03 11:03:14 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,7 +79,7 @@ void	Client::setSentbytes(unsigned int sb)
 unsigned int	Client::getSentbytes(void) const
 { return (this->_sentbytes); }
 
-bool	toRead(void) const
+bool	Client::toRead(void) const
 { return (this->_toread); }
 
 // Functions
@@ -88,15 +88,9 @@ int	Client::read(void)
 	int		bytes;
 	size_t	pos;
 	// Read from the client
-	bytes = recv(this->_fd, this->_buffer, 2048);
+	bytes = recv(this->_fd, this->_buffer, 2048, 0);
 	// Print
 	std::cout << this->_buffer << std::endl;
-	// Check if the client is finished
-	if (bytes == 0)
-	{
-		this->_toread = false;
-		return (bytes);
-	}
 	// If not, update values
 	this->_totalbytes = this->_totalbytes + bytes;
 	this->_request = this->_request + this->_buffer;
@@ -106,16 +100,20 @@ int	Client::read(void)
 	if (pos != std::string::npos && this->_header.find("\r\n\r\n") == std::string::npos) // Check if it's the header...
 	{
 		this->_header = this->_request.substr(0, pos + 4);
-		std::cout << this->_header << std::endl;
+		// std::cout << "Header=\n" << this->_header << std::endl;
 		this->_request.erase(0, pos + 4);
-		std::cout << this->_request << std::endl;
+		// std::cout << this->_request << std::endl;
+		if (this->_request.find("") == std::string::npos)
+			this->_toread = false;
 	}
 	else if (pos != std::string::npos && this->_header.find("\r\n\r\n") == std::string::npos) // ... or the body
 	{
 		this->_body = this->_request.substr(0, pos + 4);
 		std::cout << this->_body << std::endl;
 		this->_request.erase(0, pos + 4);
-		std::cout << this->_request << std::endl;
+		// std::cout << this->_request << std::endl;
+		if (_request == "")
+			this->_toread = false;
 	}
 	return (bytes);
 }
