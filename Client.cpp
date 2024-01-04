@@ -6,12 +6,13 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:43:22 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/03 11:03:14 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/04 11:09:29 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
 
+//////////////////////////////
 // Constructors and Destructor
 Client::Client(void) : _fd(-1), _totalbytes(0), _sentbytes(0), _toread(true)
 { ft_memset(this->_buffer, 0, sizeof(this->_buffer)); }
@@ -25,7 +26,7 @@ Client::Client(Client const &rhs)
 	this->_totalbytes = rhs._totalbytes;
 	this->_sentbytes = rhs._sentbytes;
 	this->_toread = rhs._toread;
-	while (i < 2048)
+	while (i < 1024)
 	{
 		this->_buffer[i] = rhs._buffer[i];
 		i++;
@@ -36,6 +37,9 @@ Client::Client(Client const &rhs)
 	this->_body = rhs._body;
 }
 
+Client::~Client(void) { }
+
+//////////////////////////////
 // Overload
 Client	&Client::operator=(Client const &rhs)
 {
@@ -58,8 +62,7 @@ Client	&Client::operator=(Client const &rhs)
 	return (*this);
 }
 
-Client::~Client(void) { }
-
+//////////////////////////////
 // Setters and Getters
 void	Client::setFD(int fd)
 { this->_fd = fd; }
@@ -79,39 +82,35 @@ void	Client::setSentbytes(unsigned int sb)
 unsigned int	Client::getSentbytes(void) const
 { return (this->_sentbytes); }
 
+std::string	Client::getHeader(void) const
+{ return (this->_header); }
+
 bool	Client::toRead(void) const
 { return (this->_toread); }
 
+//////////////////////////////
 // Functions
 int	Client::read(void)
 {
 	int		bytes;
 	size_t	pos;
-	// Read from the client
-	bytes = recv(this->_fd, this->_buffer, 2048, 0);
-	// Print
-	std::cout << this->_buffer << std::endl;
-	// If not, update values
+	bytes = recv(this->_fd, this->_buffer, 1024, 0);
+	std::cout << "[*] Buffer of client's fd " << this->_fd << ":" << std::endl << this->_buffer << std::endl;
 	this->_totalbytes = this->_totalbytes + bytes;
 	this->_request = this->_request + this->_buffer;
 	this->_sentbytes = 0;
-	// Search end sequence
 	pos = this->_request.find("\r\n\r\n");
-	if (pos != std::string::npos && this->_header.find("\r\n\r\n") == std::string::npos) // Check if it's the header...
+	if (pos != std::string::npos && this->_header.find("\r\n\r\n") == std::string::npos)
 	{
 		this->_header = this->_request.substr(0, pos + 4);
-		// std::cout << "Header=\n" << this->_header << std::endl;
 		this->_request.erase(0, pos + 4);
-		// std::cout << this->_request << std::endl;
-		if (this->_request.find("") == std::string::npos)
+		if (this->_request.find("Content-Length: ") == std::string::npos)
 			this->_toread = false;
 	}
-	else if (pos != std::string::npos && this->_header.find("\r\n\r\n") == std::string::npos) // ... or the body
+	else if (pos != std::string::npos && this->_header.find("\r\n\r\n") == std::string::npos)
 	{
 		this->_body = this->_request.substr(0, pos + 4);
-		std::cout << this->_body << std::endl;
 		this->_request.erase(0, pos + 4);
-		// std::cout << this->_request << std::endl;
 		if (_request == "")
 			this->_toread = false;
 	}

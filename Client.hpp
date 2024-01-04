@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:41:38 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/03 09:10:00 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/04 11:09:47 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,7 @@ class Client
 		unsigned int	getTotalbytes(void) const;
 		void			setSentbytes(unsigned int sb);
 		unsigned int	getSentbytes(void) const;
+		std::string		getHeader(void) const;
 		char			*getBuffer(void) const;
 		bool			toRead(void) const;
 	// Function
@@ -45,7 +46,7 @@ class Client
 		int				_fd;
 		unsigned int	_totalbytes;
 		unsigned int	_sentbytes;
-		char			_buffer[2048 + 1];
+		char			_buffer[1024 + 1];
 		std::string		_request;
 		std::string		_header;
 		std::string		_body;

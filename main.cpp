@@ -6,27 +6,11 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:05:30 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/03 11:06:41 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/04 15:45:44 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Server.hpp"
-#include <signal.h>
-
-void	*ft_memset(void *s, int c, size_t n)
-{
-	size_t			i;
-	unsigned char	*s2;
-
-	i = 0;
-	s2 = static_cast<unsigned char *>(s);
-	while (i < n)
-	{
-		s2[i] = c;
-		i++;
-	}
-	return (s);
-}
+#include "WebServer.hpp"
 
 int	main(int argc, char **argv)
 {
@@ -34,22 +18,28 @@ int	main(int argc, char **argv)
 	{
 		if (argc != 2)
 		{
-			std::cout << "Usage: ./webserv <\"config\".conf>" << std::endl;
+			std::cerr << "Usage: ./webserv <\"config\".conf>" << std::endl;
 			return (1);
 		}
 		static_cast<void>(argv);
+		WebServer	ws;
 		signal(SIGPIPE, SIG_IGN);
-		Server	serv;
-
-		serv.run();
+		signal(SIGINT, sigint_handler);
+		// <- parsing config here.
+		ws.run();
+	}
+	catch (const WebServer::SigintException &e)
+	{
+		std::cout << std::endl << "[!] The Webserver has been closed through SIGINT." << " 'til next time!" << std::endl;
+		return (0);
 	}
 	catch (const std::exception &e)
 	{
-		std::cout << "Error: " << e.what();
+		std::cerr << "[!] Error: " << e.what();
 		if (errno != 0)
-			std::cout << strerror(errno);
-		std::cout << std::endl;
-		// return (1);
+			std::cerr << strerror(errno);
+		std::cerr << std::endl;
+		return (1);
 	}
 	return (0);
 }

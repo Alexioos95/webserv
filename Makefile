@@ -6,7 +6,7 @@
 #    By: apayen <apayen@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/10/17 14:41:49 by apayen            #+#    #+#              #
-#    Updated: 2023/12/12 12:07:05 by apayen           ###   ########.fr        #
+#    Updated: 2024/01/04 16:12:22 by apayen           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -15,8 +15,10 @@ DIR = build
 
 SRC = 	$(addprefix $(DIR)/,	\
 		main.cpp				\
-		Server.cpp				\
-		Client.cpp)
+		WebServer.cpp			\
+		ServerBlock.cpp			\
+		Client.cpp				\
+		utils.cpp)
 
 OBJ =		$(SRC:.cpp=.o)
 DEP =		$(OBJ:.o=.d)
