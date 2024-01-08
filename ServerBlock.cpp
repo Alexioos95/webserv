@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:38:00 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/04 16:12:07 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/08 12:12:09 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ ServerBlock::ServerBlock(std::string server_name, std::string root, std::vector<
 		isocket = socket(AF_INET, SOCK_STREAM, 0);
 		if (isocket == -1)
 		{
-			std::cerr << "[*] Failed creating socket for " << this->_server_name << ":" << ports[i - 1];
+			std::cerr << "[!] Failed creating socket for " << this->_server_name << ":" << ports[i - 1];
 			std::cerr << ": " << strerror(errno) << std::endl;
 			err++;
 			continue ;
@@ -46,21 +46,21 @@ ServerBlock::ServerBlock(std::string server_name, std::string root, std::vector<
 		this->_addr = sizeof(this->_structsock);
 		if (bind(isocket, reinterpret_cast<struct sockaddr *>(&this->_structsock), sizeof(this->_structsock)) == -1)
 		{
-			std::cerr << "[*] Failed binding socket for " << this->_server_name << " to port " << ports[i - 1];
+			std::cerr << "[!] Failed binding socket for " << this->_server_name << " to port " << ports[i - 1];
 			std::cerr << ": " << strerror(errno) << std::endl;
 			err++;
 			continue ;
 		}
 		if (setNonblockingFD(isocket) == 1)
 		{
-			std::cerr << "[*] Failed setting " << this->_server_name << ":" << ports[i - 1] << " to non-bloquant";
+			std::cerr << "[!] Failed setting " << this->_server_name << ":" << ports[i - 1] << " to non-bloquant";
 			std::cerr << ": " << strerror(errno) << std::endl;
 			err++;
 			continue ;
 		}
 		if (listen(isocket, SOMAXCONN) == -1)
 		{
-			std::cerr << "[*] Failed to make " << this->_server_name << " listening to port " << ports[i - 1];
+			std::cerr << "[!] Failed to make " << this->_server_name << " listening to port " << ports[i - 1];
 			std::cerr << ": " << strerror(errno) << std::endl;
 			err++;
 			continue ;
@@ -70,10 +70,10 @@ ServerBlock::ServerBlock(std::string server_name, std::string root, std::vector<
 	}
 	if (err == ports.size())
 	{
-		std::cerr << "[-] Server " << this->_server_name << " couldn't be created" << std::endl;
+		std::cerr << "[!] server " << this->_server_name << " couldn't be created" << std::endl;
 		throw (CreationException());
 	}
-	std::cout << "[+] Succesfully created Server " << this->_server_name << std::endl;
+	std::cout << "[+] Succesfully created server " << this->_server_name << std::endl;
 }
 
 ServerBlock::ServerBlock(ServerBlock const &rhs)
@@ -87,12 +87,24 @@ ServerBlock::ServerBlock(ServerBlock const &rhs)
 ServerBlock::~ServerBlock(void) {}
 
 //////////////////////////////
+// Overload
+
+ServerBlock	&ServerBlock::operator=(ServerBlock const &rhs)
+{
+	this->_server_name = rhs._server_name;
+	this->_root = rhs._root;
+	this->_socket = rhs._socket;
+	this->_ports = rhs._ports;
+	return (*this);
+}
+
+//////////////////////////////
 // Getters and Setters
 std::string	ServerBlock::getName(void) const
 { return (this->_server_name); }
 
-std::vector<int>	ServerBlock::getSocket(void) const
+std::vector<int>	&ServerBlock::getSocket(void)
 { return (this->_socket); }
 
-std::vector<int>	ServerBlock::getPorts(void) const
+std::vector<int>	&ServerBlock::getPorts(void)
 { return (this->_ports); }

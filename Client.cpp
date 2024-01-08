@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:43:22 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/04 11:09:29 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/08 12:12:56 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,12 +90,13 @@ bool	Client::toRead(void) const
 
 //////////////////////////////
 // Functions
-int	Client::read(void)
+int	Client::readRequest(void)
 {
 	int		bytes;
 	size_t	pos;
+
 	bytes = recv(this->_fd, this->_buffer, 1024, 0);
-	std::cout << "[*] Buffer of client's fd " << this->_fd << ":" << std::endl << this->_buffer << std::endl;
+	// std::cout << "[*] Buffer of client's fd " << this->_fd << ":" << std::endl << this->_buffer << std::endl;
 	this->_totalbytes = this->_totalbytes + bytes;
 	this->_request = this->_request + this->_buffer;
 	this->_sentbytes = 0;
@@ -103,11 +104,12 @@ int	Client::read(void)
 	if (pos != std::string::npos && this->_header.find("\r\n\r\n") == std::string::npos)
 	{
 		this->_header = this->_request.substr(0, pos + 4);
+		std::cout << "[*] Header of client: fd " << this->_fd << ":" << std::endl << this->_header << std::endl;
 		this->_request.erase(0, pos + 4);
 		if (this->_request.find("Content-Length: ") == std::string::npos)
 			this->_toread = false;
 	}
-	else if (pos != std::string::npos && this->_header.find("\r\n\r\n") == std::string::npos)
+	else if (pos != std::string::npos && this->_body.find("\r\n\r\n") == std::string::npos)
 	{
 		this->_body = this->_request.substr(0, pos + 4);
 		this->_request.erase(0, pos + 4);

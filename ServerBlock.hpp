@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:33:30 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/04 16:11:58 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/08 09:37:20 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,16 +26,17 @@ class ServerBlock
 	// Exceptions
 		class CreationException : public std::exception
 		{ public: const char	*what(void) const throw(); };
+	// Overload
+		ServerBlock				&operator=(ServerBlock const &rhs);
 	// Getters
 		std::string				getName(void) const;
-		std::vector<int>		getSocket(void) const;
-		std::vector<int>		getPorts(void) const;
+		std::vector<int>		&getSocket(void);
+		std::vector<int>		&getPorts(void);
 
 	private:
 	// Constructors
 		ServerBlock(void);
 	// Overload
-		ServerBlock				&operator=(ServerBlock const &rhs);
 	// Attributes
 		std::string				_server_name;
 		std::string				_root;

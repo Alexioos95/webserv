@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:41:38 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/04 11:09:47 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/08 11:57:28 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ class Client
 		char			*getBuffer(void) const;
 		bool			toRead(void) const;
 	// Function
-		int				read(void);
+		int				readRequest(void);
 
 	private:
 	// Attributes

@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:33:30 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/04 16:10:09 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/08 11:04:14 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,13 +45,17 @@ class WebServer
 			{ public: const char	*what(void) const throw(); };
 	// Functions
 		void	run(void);
-		void	ManageFDSets(void);
 
 	private:
 	// Constructors
 		WebServer(WebServer const &rhs);
 	// Overload
 		WebServer			&operator=(WebServer const &rhs);
+	// Functions
+		void	manageFDSets(void);
+		void	checkServerBlocks(void);
+		void	newClient(std::string name, int port, int socket);
+		void	checkClients(void);
 	// Attributes
 		std::vector<ServerBlock>	_servs;
 		std::vector<Client>			_clients;
