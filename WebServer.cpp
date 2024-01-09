@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:38:00 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/08 12:11:28 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/09 15:08:48 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,7 +50,7 @@ void	WebServer::run(void)
 	std::vector<int>	vec;
 	vec.push_back(8080);
 	vec.push_back(8081);
-	ServerBlock	tmp("no_name", "/np/", vec);
+	ServerBlock	tmp("no_name", "./np/", vec);
 	this->_servs.push_back(tmp);
 	// ^ A enlever, c'est juste pour test. ^
 
@@ -59,18 +59,14 @@ void	WebServer::run(void)
 	{
 		if (g_sigint == true)
 		{
-			std::vector<Client>::iterator	it = this->_clients.begin();
-			while (it != this->_clients.end())
-			{
-				close((*it).getFD());
-				it++;
-			}
+			this->shutdown();
 			throw (SigintException());
 		}
 		this->manageFDSets();
 		if (select(FD_SETSIZE, &this->_rset, &this->_wset, &this->_errset, NULL) == -1)
 		{
 			std::cerr << "\n[!] Critical error on select: " << strerror(errno) << ". Shutting down the program..." << std::endl;
+			this->shutdown();
 			throw(SigintException());
 		}
 		else
@@ -78,6 +74,35 @@ void	WebServer::run(void)
 			this->checkServerBlocks();
 			this->checkClients();
 		}
+	}
+}
+
+void	WebServer::shutdown(void)
+{
+	std::vector<Client>::iterator		it;
+	std::vector<ServerBlock>::iterator	ite;
+	std::vector<int>					sock;
+	std::vector<int>::iterator			iter;
+
+	it = this->_clients.begin();
+	while (it != this->_clients.end())
+	{
+		if ((*it).fileIsOpen())
+			(*it).getFile().close();
+		close((*it).getFD());
+		it++;
+	}
+	ite = this->_servs.begin();
+	while (ite != this->_servs.end())
+	{
+		sock = (*ite).getSocket();
+		iter = sock.begin();
+		while (iter != sock.end())
+		{
+			close((*iter));
+			iter++;
+		}
+		ite++;
 	}
 }
 
@@ -141,28 +166,30 @@ void	WebServer::checkServerBlocks(void)
 				prt = port.erase(prt) - 1;
 			}
 			else if (FD_ISSET((*sck), &this->_rset))
-				this->newClient((*sb).getName(), (*prt), (*sck));
+				this->newClient((*sb), (*prt), (*sck));
 			sck++;
 			prt++;
 		}
 		if (sock.empty())
 		{
-			std::cerr << "[*] " << (*sb).getName() << " isn't binded to any port anymore. Shutting down the server..." << std::endl;
+			std::cerr << "[-] " << (*sb).getName() << " isn't binded to any port anymore. Shutting down the server..." << std::endl;
 			sb = this->_servs.erase(sb) - 1;
 		}
 		if (this->_servs.empty())
 		{
-			std::cerr << std::endl << "[*] There is no server running anymore. Shutting down the program...";
+			std::cerr << std::endl << "[-] There is no server running anymore. Shutting down the program...";
 			g_sigint = true;
 		}
 		sb++;
 	}
 }
 
-void	WebServer::newClient(std::string name, int port, int socket)
+void	WebServer::newClient(ServerBlock sb, int port, int socket)
 {
-	Client	cl;
+	Client		cl(sb);
+	std::string	name;
 
+	name = sb.getName();
 	cl.setFD(accept(socket, 0, 0));
 	// cl.setFD(accept(socket, reinterpret_cast<struct sockaddr *>(&this->_structsock), reinterpret_cast<socklen_t *>(&this->_addr)));
 	// ^ A enlever ? ^
@@ -186,6 +213,7 @@ void	WebServer::checkClients(void)
 	std::vector<Client>::iterator	it;
 	int								fd;
 	int								bytes;
+	int								status;
 
 	it = this->_clients.begin();
 	while (it != this->_clients.end())
@@ -204,16 +232,54 @@ void	WebServer::checkClients(void)
 			{
 				std::cerr << "[-] An error occured when reading from client: fd " << fd << ". Closed the connection" << std::endl;
 				close(fd);
-				(*it).setFD(-1);
 				it = this->_clients.erase(it) - 1;
 			}
 		}
 		else if (FD_ISSET(fd, &this->_wset))
 		{
-			std::string hello("HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 13\n\nHello world!\n");
-			write(fd, hello.c_str(), strlen(hello.c_str()));
-			(*it).setTotalbytes(0);
+			status = this->parseRequest((*it));
+			if (status != 102)
+			{
+				// Request KO.
+			}
+			else if (!(*it).readFile());
+			{
+				// Finished reading, send request.
+			}
 		}
 		it++;
 	}
+}
+
+int	WebServer::parseRequest(Client &cl)
+{
+	if (cl.inRequest())
+		return (102);
+	std::string		header;
+	std::string		root;
+	std::string		path;
+	std::string		line;
+	std::string		method;
+	std::string		file;
+	std::string		version;
+
+	header = cl.getHeader();
+	root = cl.getServer().getRoot();
+	if (root.find('/', root.length() - 1) == std::string::npos)
+		root = root + '/';
+	line = header.substr(0, header.find("\r\n"));
+	method = line.substr(0, line.find(' '));
+	if (method != "GET" && method != "POST" && method != "DELETE")
+		return (405);
+	file = line.substr((method.length() + 1), (line.find(' ', method.length() + 1) - method.length()));
+	path = root + file;
+	cl.openFile(path);
+	version = line.substr((method.length() + file.length() + 1), (line.find(' ', method.length() + file.length()) + 2));
+	if (version != "HTTP/1.1")
+	{
+		cl.getFile().close();
+		return (505);
+	}
+	cl.setInRequest(true);
+	return (102);
 }

@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:33:30 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/08 09:37:20 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/09 10:53:54 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,7 @@ class ServerBlock
 		ServerBlock				&operator=(ServerBlock const &rhs);
 	// Getters
 		std::string				getName(void) const;
+		std::string				getRoot(void) const;
 		std::vector<int>		&getSocket(void);
 		std::vector<int>		&getPorts(void);
 
