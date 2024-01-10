@@ -1,219 +1,128 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Server.cpp                                         :+:      :+:    :+:   */
+/*   Server.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:38:00 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/03 10:47:05 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/10 09:01:10 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 
-// Exceptions
-const char	*Server::FailSocketException::what(void) const throw()
-{ return ("Couldn't create the server's socket: "); }
+//////////////////////////////
+// Exception
+const char	*Server::CreationException::what(void) const throw()
+{ return (""); }
 
-const char	*Server::FailBindException::what(void) const throw()
-{ return ("Couldn't bind the server's socket: "); }
-
-const char	*Server::FailFcntlException::what(void) const throw()
-{ return ("Couldn't set the non-blocking mode to the file descriptor"); }
-
-const char	*Server::FailListenException::what(void) const throw()
-{ return ("Couldn't listen on the server's socket: "); }
-
-const char	*Server::FailAcceptingClientException::what(void) const throw()
-{ return ("Couldn't accept client's connection on the server's socket: "); }
-
-const char	*Server::ClientFailReadException::what(void) const throw()
-{ return ("Client failed reading on the server's socket: "); }
-
-const char	*Server::FailSelectException::what(void) const throw()
-{ return ("Failed to use select() to see which client needs to communicate: "); }
-
-const char	*Server::CriticalErrorException::what(void) const throw()
-{ return ("A critical error happened on the server's socket: "); }
-
+//////////////////////////////
 // Constructors and Destructor
-Server::Server(void) : _port(8081), _backlog(9999)
+Server::Server(std::string server_name, std::string root, std::vector<int> ports) \
+	: _server_name(server_name), _root(root)
 {
-	this->_socket = socket(AF_INET, SOCK_STREAM, 0);
-	// AF_INET is connection via IP.
-	// SOCK_STREAM is (second) connection, via TCP.
-	// 0 is the protocol of the socket (always 0 for TCP/IP sockets).
-	if (this->_socket == -1)
-		throw (FailSocketException());
-	// Parameter the struct for bind
-	ft_memset(this->_structsock.sin_zero, 0, sizeof(this->_structsock.sin_zero));
-	this->_structsock.sin_family = AF_INET;
-	this->_structsock.sin_addr.s_addr = htonl(INADDR_ANY); // Convert int to host's IP. INADDR_ANY for auto set.
-	this->_structsock.sin_port = htons(this->_port); // Convert int to port for the connection.
-	this->_addr = sizeof(this->_structsock);
-	if (bind(this->_socket, reinterpret_cast<struct sockaddr *>(&this->_structsock), sizeof(this->_structsock)) == -1)
-		throw (FailBindException());
-	// Set the fd on non-blocking mode
-	this->setNonblockingFD(this->_socket);
-	// Activate communication to wait clients
-	if (listen(this->_socket, this->_backlog) == -1)
-		throw (FailListenException());
-	std::cout << "[+] Succesfully created Server" << std::endl;
-}
+	unsigned long	i;
+	unsigned long	err;
+	int				isocket;
 
-Server::Server(int const port) : _port(port), _backlog(9999)
-{
-	this->_socket = socket(AF_INET, SOCK_STREAM, 0);
-	if (this->_socket == -1)
-		throw (FailSocketException());
-	ft_memset(this->_structsock.sin_zero, 0, sizeof(this->_structsock.sin_zero));
-	this->_structsock.sin_family = AF_INET;
-	this->_structsock.sin_addr.s_addr = htonl(INADDR_ANY);
-	this->_structsock.sin_port = htons(this->_port);
-	this->_addr = sizeof(this->_structsock);
-	if (bind(this->_socket, reinterpret_cast<struct sockaddr *>(&this->_structsock), sizeof(this->_structsock)) == -1)
-		throw (FailBindException());
-	this->setNonblockingFD(this->_socket);
-	if (listen(this->_socket, this->_backlog) == -1)
-		throw (FailListenException());
-	std::cout << "[+] Succesfully created Server" << std::endl;
-}
-
-Server::~Server(void)
-{
-	std::vector<Client>::iterator	it;
-
-	while (it != this->_clients.end())
+	i = 0;
+	err = 0;
+	while (i < ports.size())
 	{
-		close((*it).getFD());
-		it = this->_clients.erase(it) - 1;
-		it++;
+		i++;
+		isocket = socket(AF_INET, SOCK_STREAM, 0);
+		if (isocket == -1)
+		{
+			std::cerr << "[!] Failed creating socket for " << this->_server_name << ":" << ports[i - 1];
+			std::cerr << ": " << strerror(errno) << std::endl;
+			err++;
+			continue ;
+		}
+		ft_memset(this->_structsock.sin_zero, 0, sizeof(this->_structsock.sin_zero));
+		this->_structsock.sin_family = AF_INET;
+		this->_structsock.sin_addr.s_addr = htonl(INADDR_ANY);
+		this->_structsock.sin_port = htons(ports[i - 1]);
+		this->_addr = sizeof(this->_structsock);
+		if (bind(isocket, reinterpret_cast<struct sockaddr *>(&this->_structsock), sizeof(this->_structsock)) == -1)
+		{
+			std::cerr << "[!] Failed binding socket for " << this->_server_name << " to port " << ports[i - 1];
+			std::cerr << ": " << strerror(errno) << std::endl;
+			err++;
+			close(isocket);
+			continue ;
+		}
+		if (setNonblockingFD(isocket) == 1)
+		{
+			std::cerr << "[!] Failed setting " << this->_server_name << ":" << ports[i - 1] << " to non-bloquant";
+			std::cerr << ": " << strerror(errno) << std::endl;
+			err++;
+			close(isocket);
+			continue ;
+		}
+		if (listen(isocket, SOMAXCONN) == -1)
+		{
+			std::cerr << "[!] Failed to make " << this->_server_name << " listening to port " << ports[i - 1];
+			std::cerr << ": " << strerror(errno) << std::endl;
+			err++;
+			close(isocket);
+			continue ;
+		}
+		this->_socket.push_back(isocket);
+		this->_ports.push_back(ports[i - 1]);
 	}
-	close(this->_socket);
+	if (err == ports.size())
+	{
+		std::cerr << "[!] server " << this->_server_name << " couldn't be created" << std::endl;
+		throw (CreationException());
+	}
+	i = 0;
+	std::cout << "[+] Succesfully created server " << this->_server_name << "\n";
+	std::cout << "[*] Listening on port";
+	if (this->_ports.size() > 1)
+		std::cout << "s";
+	std::cout << " ";
+	while (i < this->_ports.size())
+	{
+		std::cout << this->_ports[i];
+		if (i != this->_ports.size() - 1)
+			std::cout << ", ";
+		i++;
+	}
+	std::cout << std::endl;
 }
 
-// Functions
-int	Server::getSocket(void) const
+Server::Server(Server const &rhs)
+{
+	this->_server_name = rhs._server_name;
+	this->_root = rhs._root;
+	this->_socket = rhs._socket;
+	this->_ports = rhs._ports;
+}
+
+Server::~Server(void) {}
+
+//////////////////////////////
+// Overload
+Server	&Server::operator=(Server const &rhs)
+{
+	this->_server_name = rhs._server_name;
+	this->_root = rhs._root;
+	this->_socket = rhs._socket;
+	this->_ports = rhs._ports;
+	return (*this);
+}
+
+//////////////////////////////
+// Getters
+std::string	Server::getName(void) const
+{ return (this->_server_name); }
+
+std::string	Server::getRoot(void) const
+{ return (this->_root); }
+
+std::vector<int>	&Server::getSocket(void)
 { return (this->_socket); }
 
-void	Server::setFDSet(void)
-{
-	std::vector<Client>::iterator	it;
-
-	it = this->_clients.begin();
-	// Reset the set of fd to listen
-	FD_ZERO(&this->_rset);
-	FD_ZERO(&this->_wset);
-	FD_ZERO(&this->_errset);
-	// Add the server's socket to the sets
-	FD_SET(this->_socket, &this->_rset);
-	FD_SET(this->_socket, &this->_errset);
-	// Add fd of clients to their set
-	while (it != this->_clients.end())
-	{
-		if ((*it).toRead())
-			FD_SET((*it).getFD(), &this->_rset);
-		else
-			FD_SET((*it).getFD(), &this->_wset);
-		FD_SET((*it).getFD(), &this->_errset);
-		it++;
-	}
-}
-
-void	Server::setNonblockingFD(int fd)
-{
-	int flags;
-
-	flags = fcntl(fd, F_GETFL, 0);
-	if (flags == -1)
-		throw (FailFcntlException());
-	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
-		throw (FailFcntlException());
-}
-
-void	Server::run(void)
-{
-	std::vector<Client>::iterator	it;
-	int								bytes;
-
-	while (1)
-	{
-		try
-		{
-			// Initialize the set of fd
-			this->setFDSet();
-			// Select(), to see which client needs
-			if (select(FD_SETSIZE, &this->_rset, &this->_wset, &this->_errset, NULL) == -1)
-				throw (FailSelectException());
-			else
-			{
-				if (FD_ISSET(this->_socket, &this->_errset)) // Check error for server's socket
-					throw (CriticalErrorException());
-				else if (FD_ISSET(this->_socket, &this->_rset)) // Select was woken up. Accept new client
-				{
-					Client	cl;
-					// Accept new client
-					cl.setFD(accept(this->_socket, reinterpret_cast<struct sockaddr *>(&this->_structsock), reinterpret_cast<socklen_t *>(&this->_addr)));
-					if (cl.getFD() == -1)
-						throw (FailAcceptingClientException());
-					// Set his fd to non-blocking mode
-					this->setNonblockingFD(cl.getFD()); // Blocks from reading multiple times in a short interval... ?
-					// Add the client to the vector
-					this->_clients.push_back(cl);
-					std::cout << "[+] Accepted new client. Gave him fd " << cl.getFD() << std::endl;
-				}
-				it = this->_clients.begin();
-				while (it != this->_clients.end())
-				{
-					if (FD_ISSET((*it).getFD(), &this->_errset)) // Check error for client's fd.
-					{
-						close((*it).getFD());
-						(*it).setFD(-1);
-						it = this->_clients.erase(it) - 1;
-					}
-					else if (FD_ISSET((*it).getFD(), &this->_rset)) // Client is ready for read
-					{
-						// Read from the client
-						bytes = (*it).read();
-						// Check if client finished
-						if (bytes <= 0)
-						{
-							close((*it).getFD());
-							(*it).setFD(-1);
-							it = this->_clients.erase(it) - 1;
-							if (bytes == -1) // Check if an error occured during read
-								throw (ClientFailReadException());
-						}
-					}
-					else if (FD_ISSET((*it).getFD(), &this->_wset)) // Client is ready for write
-					{
-						// Parse request
-						// Write to the client
-						std::string hello("HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 13\n\nHello world!\n");
-						write((*it).getFD(), hello.c_str(), strlen(hello.c_str()));
-						(*it).setTotalbytes(0);
-					}
-					it++;
-				}
-			}
-		}
-		catch (Server::FailSelectException &e)
-		{
-			std::cout << "Error: " << e.what() << strerror(errno) << std::endl;
-			return ;
-		}
-		catch (Server::CriticalErrorException &e)
-		{
-			std::cout << "Error: " << e.what() << strerror(errno) << std::endl;
-			return ;
-		}
-		catch (std::exception &e)
-		{
-			std::cout << "Error: " << e.what();
-			if (errno != 0)
-				std::cout << strerror(errno);
-			std::cout << std::endl;
-		}
-	}
-}
+std::vector<int>	&Server::getPorts(void)
+{ return (this->_ports); }

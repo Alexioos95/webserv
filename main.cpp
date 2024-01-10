@@ -6,11 +6,11 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:05:30 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/08 10:29:18 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/10 13:07:43 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "WebServer.hpp"
+#include "Manager.hpp"
 
 int	main(int argc, char **argv)
 {
@@ -22,11 +22,11 @@ int	main(int argc, char **argv)
 			return (1);
 		}
 		static_cast<void>(argv);
-		WebServer	ws;
+		Manager	mng;
 		signal(SIGPIPE, SIG_IGN);
 		signal(SIGINT, sigint_handler);
-		// <- parsing config here.
-		ws.run();
+		// <- parsing config here. Note: Si la root du serveur ne contient pas de / final, ajoute le stp.
+		mng.run();
 	}
 	catch (const std::exception &e)
 	{
@@ -42,7 +42,7 @@ int	main(int argc, char **argv)
 		}
 		else
 		{
-			std::cerr << "[!] Error: " << e.what();
+			std::cerr << "[!] Critical error in the program: " << e.what();
 			if (errno != 0)
 				std::cerr << strerror(errno);
 			std::cerr << std::endl;

@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:43:22 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/09 14:38:46 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/10 15:53:38 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,37 +14,22 @@
 
 //////////////////////////////
 // Constructors and Destructor
-Client::Client(ServerBlock &server) : _server(server), _fd(-1), _totalbytes(0), _toread(true), _inrequest(false)
-{
-	ft_memset(this->_buffer, 0, sizeof(this->_buffer));
-	ft_memset(this->_buffile, 0, sizeof(this->_buffile));
-}
+Client::Client(Server &serv) : _server(serv), _fd(-1), _toread(true), \
+	_contentlength(0), _maxcontentlength(0), _inrequest(false), _keepalive(true) { }
 
 Client::Client(Client const &rhs) : _server(rhs._server)
 {
-	int	i;
-
-	i = 0;
 	this->_fd = rhs._fd;
-	this->_totalbytes = rhs._totalbytes;
 	this->_toread = rhs._toread;
-	while (i < 1024)
-	{
-		this->_buffer[i] = rhs._buffer[i];
-		i++;
-	}
-	i = 0;
-	while (i < 1024)
-	{
-		this->_buffile[i] = rhs._buffile[i];
-		i++;
-	}
-	this->_buffer[i] = '\0';
-	this->_buffile[i] = '\0';
 	this->_request = rhs._request;
 	this->_header = rhs._header;
 	this->_body = rhs._body;
+	this->_filepath = rhs._filepath;
+	this->_filecontent = rhs._filecontent;
+	this->_contentlength = rhs._contentlength;
+	this->_maxcontentlength = rhs._maxcontentlength;
 	this->_inrequest = rhs._inrequest;
+	this->_keepalive = rhs._keepalive;
 }
 
 Client::~Client(void)
@@ -57,58 +42,62 @@ Client::~Client(void)
 // Overload
 Client	&Client::operator=(Client const &rhs)
 {
-	int	i;
-
-	i = 0;
+	this->_server = rhs._server;
 	this->_fd = rhs._fd;
-	this->_totalbytes = rhs._totalbytes;
 	this->_toread = rhs._toread;
-	while (i < 1024)
-	{
-		this->_buffer[i] = rhs._buffer[i];
-		i++;
-	}
-	i = 0;
-	while (i < 1024)
-	{
-		this->_buffer[i] = rhs._buffer[i];
-		i++;
-	}
-	this->_buffer[i] = '\0';
 	this->_request = rhs._request;
 	this->_header = rhs._header;
 	this->_body = rhs._body;
+	if (this->_file.is_open())
+		this->_file.close();
+	this->_filepath = rhs._filepath;
+	this->_filecontent = rhs._filecontent;
+	this->_contentlength = rhs._contentlength;
+	this->_maxcontentlength = rhs._maxcontentlength;
+	this->_inrequest = rhs._inrequest;
+	this->_keepalive = rhs._keepalive;
 	return (*this);
 }
 
 //////////////////////////////
 // Setters
-
 void	Client::setFD(int fd)
 { this->_fd = fd; }
-
-void	Client::setTotalbytes(unsigned int tb)
-{ this->_totalbytes = tb; }
 
 void	Client::setInRequest(bool state)
 { this->_inrequest = state; }
 
+void	Client::setKeepAlive(bool state)
+{ this->_keepalive = state; }
+
+void	Client::setToRead(bool state)
+{ this->_toread = state; }
+
 //////////////////////////////
 // Getters
-ServerBlock		&Client::getServer(void)
+Server	&Client::getServer(void)
 { return (this->_server); }
 
 int	Client::getFD(void) const
 { return (this->_fd); }
-
-unsigned int	Client::getTotalbytes(void) const
-{ return (this->_totalbytes); }
 
 std::string	Client::getHeader(void) const
 { return (this->_header); }
 
 std::fstream	&Client::getFile(void)
 { return (this->_file); }
+
+std::string	Client::getFilePath(void) const
+{ return (this->_filepath); }
+
+std::string	&Client::getFileContent(void)
+{ return (this->_filecontent); }
+
+int	Client::getContentLength(void) const
+{ return (this->_contentlength); }
+
+std::string	Client::getContentType(void) const
+{ return (this->_contenttype); }
 
 bool	Client::toRead(void) const
 { return (this->_toread); }
@@ -119,68 +108,92 @@ bool	Client::fileIsOpen(void) const
 bool	Client::inRequest(void) const
 { return (this->_inrequest); }
 
+bool	Client::keepAlive(void) const
+{ return (this->_keepalive); }
+
 //////////////////////////////
 // Functions
 int	Client::readRequest(void)
 {
-	int		bytes;
-	size_t	pos;
+	char		buffer[2048 + 1];
+	int			bytes;
+	size_t		pos;
+	std::string	nb;
 
-	bytes = recv(this->_fd, this->_buffer, 1024, 0);
-	// std::cout << "[*] Buffer of client's fd " << this->_fd << ":" << std::endl << this->_buffer << std::endl;
-	this->_totalbytes = this->_totalbytes + bytes;
-	this->_request = this->_request + this->_buffer;
+	buffer[2048] = '\0';
+	bytes = recv(this->_fd, buffer, 2048, 0);
+	this->_request = this->_request + buffer;
 	pos = this->_request.find("\r\n\r\n");
-	if (pos != std::string::npos && this->_header.find("\r\n\r\n") == std::string::npos)
+	if (pos == std::string::npos)
+		std::cout << "[*] Buffer of client: fd " << this->_fd << ":" << std::endl << this->_header << std::endl;
+	else if (pos != std::string::npos && this->_header.find("\r\n\r\n") == std::string::npos)
 	{
 		this->_header = this->_request.substr(0, pos + 4);
 		std::cout << "[*] Header of client: fd " << this->_fd << ":" << std::endl << this->_header << std::endl;
 		this->_request.erase(0, pos + 4);
 		if (this->_request.find("Content-Length: ") == std::string::npos)
 			this->_toread = false;
+		else
+		{
+			pos = this->_request.find("Content-Length: ");
+			nb = this->_request.substr(pos + 16, this->_request.find("\r\n", pos) - pos);
+			this->_maxcontentlength = std::atoi(nb.c_str());
+		}
 	}
 	else if (pos != std::string::npos && this->_body.find("\r\n\r\n") == std::string::npos)
 	{
 		this->_body = this->_request.substr(0, pos + 4);
+		std::cout << "[*] Body of client: fd " << this->_fd << ":" << std::endl << this->_body << std::endl;
 		this->_request.erase(0, pos + 4);
-		if (_request == "")
-			this->_toread = false;
+		this->_toread = false;
 	}
 	return (bytes);
 }
 
-int	Client::openFile(std::string path)
+std::string	Client::openFile(std::string path)
 {
-	this->_file.open(path, std::ios::in);
+	std::string	type;
+	size_t		len;
+
+	errno = 0;
+	this->_file.open(path.c_str(), std::ios::in);
 	if (errno)
 	{
 		if (errno == ELOOP)
-			return (310);
+			return ("310 Too many Redirects");
 		else if (errno == EACCES)
-			return (403);
+			return ("403 Forbidden");
 		else if (errno == ENOENT || errno == EFAULT || errno == ENODEV)
-			return (404);
+			return ("404 Not Found");
 		else if (errno == EFBIG)
-			return (413);
+			return ("413 Request Entity Too Large");
 		else if (errno == ENAMETOOLONG)
-			return (414);
+			return ("414 Request-URI Too Long");
 		else if (errno == EMFILE || errno == ENFILE || errno == ENOMEM || errno == ENOSPC)
-			return (503);
+			return ("503 Service Unavailable");
 		else
-			return (500);
+			return ("500 Internal Server Error");
 	}
-	return (0);
+	this->_filepath = path;
+	len = path.find_last_not_of('.');
+	this->_contenttype = path.substr(len, path.length() - len);
+	return ("200 OK");
 }
 
-int	Client::readFile(void)
+std::string	Client::readFile(void)
 {
-	this->_file.read(this->_buffile, 1024);
-	this->_text = this->_text + this->_buffile;
+	char	buffer[2048 + 1];
+	int		size;
+
+	ft_memset(buffer, 0, 2048 + 1);
+	this->_file.read(buffer, 2048);
+	size = this->_filecontent.length();
+	this->_filecontent = this->_filecontent + buffer;
 	if (this->_file.eof())
 	{
 		this->_inrequest = false;
-		return (0);
+		return ("200 OK");
 	}
 	this->_inrequest = true;
-	return (1);
+	return ("102 Processing");
 }
