@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:05:30 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/10 13:07:43 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/11 16:01:51 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@ int	main(int argc, char **argv)
 		Manager	mng;
 		signal(SIGPIPE, SIG_IGN);
 		signal(SIGINT, sigint_handler);
-		// <- parsing config here. Note: Si la root du serveur ne contient pas de / final, ajoute le stp.
+		// <- parsing config here. Note: Si la root du serveur contient des / a la fin, enleve les stp.
 		mng.run();
 	}
 	catch (const std::exception &e)

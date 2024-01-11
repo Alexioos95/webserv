@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:43:22 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/10 15:53:38 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/11 16:14:47 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,14 +90,11 @@ std::fstream	&Client::getFile(void)
 std::string	Client::getFilePath(void) const
 { return (this->_filepath); }
 
-std::string	&Client::getFileContent(void)
+std::vector<char>	&Client::getFileContent(void)
 { return (this->_filecontent); }
 
 int	Client::getContentLength(void) const
 { return (this->_contentlength); }
-
-std::string	Client::getContentType(void) const
-{ return (this->_contenttype); }
 
 bool	Client::toRead(void) const
 { return (this->_toread); }
@@ -120,41 +117,43 @@ int	Client::readRequest(void)
 	size_t		pos;
 	std::string	nb;
 
-	buffer[2048] = '\0';
+	ft_memset(buffer, 0, 2048 + 1);
 	bytes = recv(this->_fd, buffer, 2048, 0);
+	if (bytes <= 0)
+		return (bytes);
 	this->_request = this->_request + buffer;
 	pos = this->_request.find("\r\n\r\n");
 	if (pos == std::string::npos)
 		std::cout << "[*] Buffer of client: fd " << this->_fd << ":" << std::endl << this->_header << std::endl;
-	else if (pos != std::string::npos && this->_header.find("\r\n\r\n") == std::string::npos)
+	else
 	{
-		this->_header = this->_request.substr(0, pos + 4);
-		std::cout << "[*] Header of client: fd " << this->_fd << ":" << std::endl << this->_header << std::endl;
-		this->_request.erase(0, pos + 4);
-		if (this->_request.find("Content-Length: ") == std::string::npos)
-			this->_toread = false;
+		if (this->_header.find("\r\n\r\n") == std::string::npos)
+		{
+			this->_header = this->_request.substr(0, pos + 4);
+			std::cout << "[*] Header of client: fd " << this->_fd << ":" << std::endl << this->_header.substr(0, this->_header.length() - 6) << std::endl;
+			this->_request.erase(0, pos + 4);
+			if (this->_request.find("Content-Length: ") == std::string::npos)
+				this->_toread = false;
+			else
+			{
+				pos = this->_request.find("Content-Length: ");
+				nb = this->_request.substr(pos + 16, this->_request.find("\r\n", pos) - pos);
+				this->_maxcontentlength = std::atoi(nb.c_str());
+			}
+		}
 		else
 		{
-			pos = this->_request.find("Content-Length: ");
-			nb = this->_request.substr(pos + 16, this->_request.find("\r\n", pos) - pos);
-			this->_maxcontentlength = std::atoi(nb.c_str());
+			this->_body = this->_request.substr(0, pos + 4);
+			std::cout << "[*] Body of client: fd " << this->_fd << ":" << std::endl << this->_body << std::endl;
+			this->_request.erase(0, pos + 4);
+			this->_toread = false;
 		}
-	}
-	else if (pos != std::string::npos && this->_body.find("\r\n\r\n") == std::string::npos)
-	{
-		this->_body = this->_request.substr(0, pos + 4);
-		std::cout << "[*] Body of client: fd " << this->_fd << ":" << std::endl << this->_body << std::endl;
-		this->_request.erase(0, pos + 4);
-		this->_toread = false;
 	}
 	return (bytes);
 }
 
 std::string	Client::openFile(std::string path)
 {
-	std::string	type;
-	size_t		len;
-
 	errno = 0;
 	this->_file.open(path.c_str(), std::ios::in);
 	if (errno)
@@ -175,25 +174,41 @@ std::string	Client::openFile(std::string path)
 			return ("500 Internal Server Error");
 	}
 	this->_filepath = path;
-	len = path.find_last_not_of('.');
-	this->_contenttype = path.substr(len, path.length() - len);
 	return ("200 OK");
 }
 
 std::string	Client::readFile(void)
 {
-	char	buffer[2048 + 1];
-	int		size;
+	char			buffer[2048];
+	std::streamsize	size;
 
-	ft_memset(buffer, 0, 2048 + 1);
 	this->_file.read(buffer, 2048);
-	size = this->_filecontent.length();
-	this->_filecontent = this->_filecontent + buffer;
-	if (this->_file.eof())
+	if (this->_file.fail() && !this->_file.eof())
 	{
-		this->_inrequest = false;
-		return ("200 OK");
+		this->_filecontent.erase(this->_filecontent.begin(), this->_filecontent.end());
+		return ("500 Internal Server Error");
 	}
+	size = this->_file.gcount();
+	this->_filecontent.insert(this->_filecontent.end(), &buffer[0], &buffer[size]);
+	this->_contentlength = this->_contentlength + size;
 	this->_inrequest = true;
+	if (size < 2048)
+		return ("200 OK");
 	return ("102 Processing");
+}
+
+void	Client::clear(void)
+{
+	std::vector<char>	tmp;
+
+	this->_toread = true;
+	this->_request = "";
+	this->_header = "";
+	this->_body = "";
+	this->_filepath = "";
+	this->_filecontent = tmp;
+	this->_contentlength = 0;
+	this->_maxcontentlength = 0;
+	this->_inrequest = false;
+	this->_toread = true;
 }

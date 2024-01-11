@@ -44,6 +44,19 @@ Manager::~Manager(void)
 }
 
 //////////////////////////////
+// Overload
+Manager	&Manager::operator=(Manager const &rhs)
+{
+	this->shutdown();
+	this->_servs = rhs._servs;
+	this->_clients = rhs._clients;
+	this->_rset = rhs._rset;
+	this->_wset = rhs._wset;
+	this->_errset = rhs._errset;
+	return (*this);
+}
+
+//////////////////////////////
 // Functions
 void	Manager::run(void)
 {
@@ -51,10 +64,14 @@ void	Manager::run(void)
 	vec.push_back(8080);
 	vec.push_back(8081);
 	vec.push_back(8082);
-	vec.push_back(8083);
-	vec.push_back(8084);
-	Server	tmp("no_name", "./np/", vec);
+	std::vector<int>	vec2;
+	vec2.push_back(8090);
+	vec2.push_back(8091);
+	vec2.push_back(8092);
+	Server	tmp("no_name", "./qr/", vec);
+	Server	tmp2("no_name2", "./np/", vec2);
 	this->_servs.push_back(tmp);
+	this->_servs.push_back(tmp2);
 	// ^ A enlever, c'est juste pour test. ^
 
 	std::cout << std::endl;
@@ -217,6 +234,8 @@ void	Manager::checkClients(void)
 	int								fd;
 	int								bytes;
 	std::string						status;
+	std::string						rdstatus;
+	std::vector<char>				response;
 
 	it = this->_clients.begin();
 	while (it != this->_clients.end())
@@ -224,16 +243,16 @@ void	Manager::checkClients(void)
 		fd = (*it).getFD();
 		if (FD_ISSET(fd, &this->_errset))
 		{
-			std::cerr << "[-] An error occured with a client: fd " << fd << ". Closed the connection" << std::endl;
+			std::cerr << "[-] An error occured with a client: fd " << fd << ". Closed the connection\n" << std::endl;
 			close(fd);
 			it = this->_clients.erase(it) - 1;
 		}
 		else if (FD_ISSET(fd, &this->_rset))
 		{
 			bytes = (*it).readRequest();
-			if (bytes <= 0)
+			if (bytes < 0)
 			{
-				std::cerr << "[-] An error occured when reading from client: fd " << fd << ". Closed the connection" << std::endl;
+				std::cerr << "[-] An error occured when reading the request of a client: " << strerror(errno) << ". fd: " << fd << ". Closed the connection\n" << std::endl;
 				close(fd);
 				it = this->_clients.erase(it) - 1;
 			}
@@ -241,13 +260,19 @@ void	Manager::checkClients(void)
 		else if (FD_ISSET(fd, &this->_wset))
 		{
 			status = this->parseRequest((*it));
-			if (status != "102 Processing" || (*it).readFile() == "200 OK")
+			rdstatus = (*it).readFile();
+			if (status != "102 Processing" || rdstatus != "102 Processing")
 			{
-				std::string t = this->buildResponse((*it), status);
-				(*it).setToRead(true);
-				send(fd, t.c_str(), t.length(), 0);
+				response = this->buildResponse((*it), status);
+				if (send(fd, response.data(), response.size(), 0) <= 0)
+				{
+					std::cerr << "[-] An error occured when sending the response to a client: fd " << fd << ". Closed the connection\n" << std::endl;
+					close(fd);
+					it = this->_clients.erase(it) - 1;
+				}
+				(*it).clear();
 			}
-			if (!(*it).keepAlive())
+			else if (!(*it).keepAlive())
 			{
 				close(fd);
 				it = this->_clients.erase(it) - 1;
@@ -292,7 +317,6 @@ std::string	Manager::parseRequest(Client &cl)
 		cl.getFile().close();
 		return ("505 HTTP Version not supported");
 	}
-	cl.setInRequest(true);
 	if (header.find("Connection: keep-alive") != std::string::npos)
 		cl.setKeepAlive(true);
 	else
@@ -300,46 +324,40 @@ std::string	Manager::parseRequest(Client &cl)
 	return ("102 Processing");
 }
 
-std::string	Manager::buildResponse(Client &cl, std::string status)
+std::vector<char>	Manager::buildResponse(Client &cl, std::string status)
 {
-	struct stat st;
-	std::string ret;
+	struct stat 		st;
+	std::vector<char>	ret;
+	std::string			str;
 
 	if (status == "102 Processing")
 		status = "200 OK";
 	if (status == "200 OK" && stat(cl.getFilePath().c_str(), &st) == -1)
 		status = "500 Internal Server Error";
-	ret = "HTTP/1.1 " + status + "\r\n";
-	ret = ret + "Date: " + getLineTime(std::time(0)) + "\r\n";
-	ret = ret + "Server: Webserv-42 (Unix)\r\n";
+	str = "HTTP/1.1 " + status + "\r\n";
+	str = str + "Date: " + getTime(std::time(0)) + "\r\n";
+	str = str + "Server: Webserv-42 (Linux)\r\n";
 	if (status == "200 OK")
 	{
-		ret = ret + "Last-Modified: " + getLineTime(st.st_mtime) + "\r\n";
-		std::string nb;
-		int			nbi;
+		str = str + "Last-Modified: " + getTime(st.st_mtime) + "\r\n";
+		str = str + "Content-Length: " + itoa(cl.getContentLength()) + "\r\n";
 
-		nbi = cl.getContentLength();
-		while (nbi > 0)
-		{
-			nb.push_back((nbi % 10) + '0');
-			std::cout << nb << std::endl;
-			nbi = nbi / 10;
-		}
-		ret = ret + "Content-Length: " + nb + "\r\n";
+		str = str + "Content-Type: " + getMime(cl) + "\r\n";
 	}
 	else
 	{
-		// Pages d'erreur perso SI pas presente dans
+		// Pages d'erreur perso SI pas presente dans le dir;
 	}
-	if (status == "200 OK")
-		ret = ret + "Content-Type: text/html\r\n";
-	else
-		ret = ret + "Content-Type: text/html\r\n";
+	str = str + "Cache-control: no-cache\r\n";
 	if (cl.keepAlive())
-		ret = ret + "Connection: keep-alive\r\n";
+		str = str + "Connection: keep-alive\r\n";
 	else
-		ret = ret + "Connection: closed\r\n";
-	ret = ret + "\r\n";
-	ret = ret + cl.getFileContent() + "\r\n\r\n";
+		str = str + "Connection: closed\r\n";
+	str = str + "\r\n";
+	std::cout << "[*] Response's header sent to client: fd " << cl.getFD() << ":\n" << str << std::endl;
+	ret.insert(ret.begin(), str.begin(), str.end());
+	ret.insert(ret.end(), cl.getFileContent().begin(), cl.getFileContent().end());
+	str = "\r\n\r\n";
+	ret.insert(ret.end(), str.begin(), str.end());
 	return (ret);
 }

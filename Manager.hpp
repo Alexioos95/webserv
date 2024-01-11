@@ -64,7 +64,7 @@ class Manager
 		void						newClient(Server &sb, int port, int socket);
 		void						checkClients(void);
 		std::string					parseRequest(Client &cl);
-		std::string					buildResponse(Client &cl, std::string status);
+		std::vector<char>			buildResponse(Client &cl, std::string status);
 	// Attributes
 		std::vector<Server>			_servs;
 		std::vector<Client>			_clients;
@@ -75,6 +75,8 @@ class Manager
 
 void		*ft_memset(void *s, int c, size_t n);
 void		sigint_handler(int sig);
-std::string	getLineTime(std::time_t time);
+std::string	getTime(std::time_t time);
+std::string	itoa(int nbi);
+std::string	getMime(Client &cl);
 
 #endif
