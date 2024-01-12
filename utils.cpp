@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/04 14:35:24 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/11 16:08:03 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/12 14:45:03 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,7 @@ void	*ft_memset(void *s, int c, size_t n)
 	return (s);
 }
 
-int	setNonblockingFD(int fd)
+int	unblockFD(int fd)
 {
 	int flags;
 
@@ -47,6 +47,9 @@ void	sigint_handler(int sig)
 	static_cast<void>(sig);
 	g_sigint = true;
 }
+
+void		sigquit_handler(int sig)
+{ static_cast<void>(sig); }
 
 std::string	getTime(std::time_t time)
 {
@@ -108,5 +111,5 @@ std::string	getMime(Client &cl)
 		i++;
 	if (i < 67)
 		return (mime[i]);
-	return ("");
+	return ("text/html");
 }

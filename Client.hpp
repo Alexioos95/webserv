@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:41:38 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/11 14:59:37 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/12 15:39:43 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,21 +14,23 @@
 # define CLIENT_HPP
 
 # include <cerrno>			// errno
-# include <iostream>		// std::cout
+# include <fstream>			// fstream
+# include <cstdlib>			// atoi
 # include <fcntl.h>			// fnctl
+# include <iostream>		// std::cout
 							// stat
 # include <unistd.h>
 # include <sys/stat.h>
 # include <sys/types.h>
 # include <sys/socket.h>	// recv
 
-# include "Server.hpp"
+# include "VirtualServer.hpp"
 
 class Client
 {
 	public:
 	// Constructors and Destructor
-		Client(Server &serv);
+		Client(int fd, int port);
 		Client(Client const &rhs);
 		~Client(void);
 	// Overload
@@ -39,16 +41,19 @@ class Client
 		void				setKeepAlive(bool state);
 		void				setToRead(bool state);
 	// Getters
-		Server				&getServer(void);
+		// info
+		int					getPort(void) const;
 		int					getFD(void) const;
+		// request
 		std::string			getHeader(void) const;
 		std::fstream		&getFile(void);
 		std::string			getFilePath(void) const;
 		int					getContentLength(void) const;
 		std::vector<char>	&getFileContent(void);
+		// state
 		bool				toRead(void) const;
-		bool				fileIsOpen(void) const;
 		bool				inRequest(void) const;
+		bool				fileIsOpen(void) const;
 		bool				keepAlive(void) const;
 	// Function
 		int					readRequest(void);
@@ -60,9 +65,10 @@ class Client
 	// Constructor
 		Client(void);
 	// Attributes
-		Server				&_server;
+		// Info
+		int					_port;
 		int					_fd;
-		bool				_toread;
+		// Request
 		std::string			_request;
 		std::string			_header;
 		std::string			_body;
@@ -71,6 +77,8 @@ class Client
 		std::vector<char>	_filecontent;
 		int					_contentlength;
 		int					_maxcontentlength;
+		// State
+		bool				_toread;
 		bool				_inrequest;
 		bool				_keepalive;
 };

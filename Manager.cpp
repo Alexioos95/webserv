@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 #include "Manager.hpp"
-#include "Server.hpp"
+#include "VirtualServer.hpp"
 #include "Client.hpp"
 
 //////////////////////////////
@@ -25,20 +25,12 @@ Manager::Manager(void) { }
 
 Manager::~Manager(void)
 {
-	std::vector<int>				sock;
-	std::vector<Server>::iterator	it;
-	std::vector<int>::iterator		ite;
+	std::map<int, int>::iterator	it;
 
-	it = this->_servs.begin();
-	while (it != this->_servs.end())
+	it = this->_sockets.begin();
+	while (it != this->_sockets.end())
 	{
-		sock = (*it).getSocket();
-		ite = sock.begin();
-		while (ite != sock.end())
-		{
-			close(*ite);
-			ite++;
-		}
+		close((*it).second);
 		it++;
 	}
 }
@@ -57,9 +49,15 @@ Manager	&Manager::operator=(Manager const &rhs)
 }
 
 //////////////////////////////
+// Getters
+std::map<int, int>	&Manager::getSockets(void)
+{ return (this->_sockets); }
+
+//////////////////////////////
 // Functions
 void	Manager::run(void)
 {
+	// v A enlever, c'est juste pour test. v
 	std::vector<int>	vec;
 	vec.push_back(8080);
 	vec.push_back(8081);
@@ -68,13 +66,13 @@ void	Manager::run(void)
 	vec2.push_back(8090);
 	vec2.push_back(8091);
 	vec2.push_back(8092);
-	Server	tmp("no_name", "./qr/", vec);
-	Server	tmp2("no_name2", "./np/", vec2);
+	VirtualServer	tmp("test.com", "./qr", vec, this->_sockets, 99999);
+	VirtualServer	tmp2("netpractice.net", "./np", vec2, this->_sockets, 99999);
 	this->_servs.push_back(tmp);
 	this->_servs.push_back(tmp2);
+	std::cout << std::endl;
 	// ^ A enlever, c'est juste pour test. ^
 
-	std::cout << std::endl;
 	while (1)
 	{
 		if (g_sigint == true)
@@ -87,11 +85,11 @@ void	Manager::run(void)
 		{
 			std::cerr << "\n[!] Critical error on select: " << strerror(errno) << ". Shutting down the program..." << std::endl;
 			this->shutdown();
-			throw(SigintException());
+			throw (SigintException());
 		}
 		else
 		{
-			this->checkServers();
+			this->checkPorts();
 			this->checkClients();
 		}
 	}
@@ -100,8 +98,7 @@ void	Manager::run(void)
 void	Manager::shutdown(void)
 {
 	std::vector<Client>::iterator	it;
-	std::vector<Server>::iterator	ite;
-	std::vector<int>::iterator		iter;
+	std::map<int, int>::iterator	ite;
 	std::vector<int>				sock;
 
 	it = this->_clients.begin();
@@ -112,120 +109,113 @@ void	Manager::shutdown(void)
 		close((*it).getFD());
 		it++;
 	}
-	ite = this->_servs.begin();
-	while (ite != this->_servs.end())
+	ite = this->_sockets.begin();
+	while (ite != this->_sockets.end())
 	{
-		sock = (*ite).getSocket();
-		iter = sock.begin();
-		while (iter != sock.end())
-		{
-			close((*iter));
-			iter++;
-		}
+		close((*ite).second);
 		ite++;
 	}
 }
 
 void	Manager::manageFDSets(void)
 {
-	std::vector<int>				sock;
-	std::vector<Server>::iterator	it;
-	std::vector<int>::iterator		ite;
-	std::vector<Client>::iterator	iter;
+	std::map<int, int>::iterator	it;
+	std::vector<Client>::iterator	ite;
 
 	FD_ZERO(&this->_rset);
 	FD_ZERO(&this->_wset);
 	FD_ZERO(&this->_errset);
-	it = this->_servs.begin();
-	while (it != this->_servs.end())
+	it = this->_sockets.begin();
+	while (it != this->_sockets.end())
 	{
-		sock = (*it).getSocket();
-		ite = sock.begin();
-		while (ite != sock.end())
-		{
-			FD_SET((*ite), &this->_rset);
-			FD_SET((*ite), &this->_errset);
-			ite++;
-		}
+		FD_SET((*it).second, &this->_rset);
+		FD_SET((*it).second, &this->_errset);
 		it++;
 	}
-	iter = this->_clients.begin();
-	while (iter != this->_clients.end())
+	ite = this->_clients.begin();
+	while (ite != this->_clients.end())
 	{
-		if ((*iter).toRead())
-			FD_SET((*iter).getFD(), &this->_rset);
+		if ((*ite).toRead())
+			FD_SET((*ite).getFD(), &this->_rset);
 		else
-			FD_SET((*iter).getFD(), &this->_wset);
-		FD_SET((*iter).getFD(), &this->_errset);
-		iter++;
+			FD_SET((*ite).getFD(), &this->_wset);
+		FD_SET((*ite).getFD(), &this->_errset);
+		ite++;
 	}
 }
 
-void	Manager::checkServers(void)
+void	Manager::checkPorts(void)
 {
-	std::vector<int>				sock;
-	std::vector<int>				port;
-	std::vector<Server>::iterator	sb;
-	std::vector<int>::iterator		sck;
-	std::vector<int>::iterator		prt;
+	std::map<int, int>::iterator			itport;
+	std::map<int, int>::iterator			tmp;
+	std::vector<VirtualServer>::iterator	itserv;
+	std::vector<int>						servport;
+	std::vector<int>::iterator				itservport;
+	struct sockaddr_in						ssock;
+	int										port;
+	int										fdsock;
+	int										clfd;
 
-	sb = this->_servs.begin();
-	while (sb != this->_servs.end())
+	itport = this->_sockets.begin();
+	while (itport != this->_sockets.end())
 	{
-		sock = (*sb).getSocket();
-		port = (*sb).getPorts();
-		sck = sock.begin();
-		prt = port.begin();
-		while (sck != sock.end())
+		port = (*itport).first;
+		fdsock = (*itport).second;
+		tmp = itport;
+		if (FD_ISSET(fdsock, &this->_errset))
 		{
-			if (FD_ISSET((*sck), &this->_errset))
+			std::cerr << "[!] A critical error occured while listening on port " << port;
+			std::cerr << ". Closing the connection..." << "\n" << std::endl;
+			close(fdsock);
+			itport--;
+			this->_sockets.erase(tmp);
+			itserv = this->_servs.begin();
+			while (itserv != this->_servs.end())
 			{
-				std::cerr << "[!] Error on " << (*sb).getName() << ":" << (*prt) << ". Closed the connection" << std::endl;
-				close(*sck);
-				sck = sock.erase(sck) - 1;
-				prt = port.erase(prt) - 1;
+				servport = (*itserv).getPorts();
+				itservport = servport.begin();
+				while (itservport != servport.end())
+				{
+					if (port == (*itservport))
+						itservport = servport.erase(itservport) - 1;
+					itservport++;
+				}
+				if (servport.empty())
+				{
+					std::cout << "[-] " << (*itserv).getName() << " doesn't have any port to listen to anymore";
+					std::cout << ". Closing the server..." << "\n" << std::endl;
+					itserv = this->_servs.erase(itserv) - 1;
+				}
+				if (this->_servs.empty())
+				{
+					std::cout << "[-] " << "No more server are running";
+					std::cout << ". Shutting down the program..." << "\n" << std::endl;
+					this->shutdown();
+				}
+				itserv++;
 			}
-			else if (FD_ISSET((*sck), &this->_rset))
-				this->newClient((*sb), (*prt), (*sck));
-			sck++;
-			prt++;
 		}
-		if (sock.empty())
+		else if (FD_ISSET(fdsock, &this->_rset))
 		{
-			std::cerr << "[-] " << (*sb).getName() << " isn't binded to any port anymore. Shutting down the server..." << std::endl;
-			sb = this->_servs.erase(sb) - 1;
+			ft_memset(ssock.sin_zero, 0, sizeof(ssock.sin_zero));
+			clfd = accept(fdsock, 0, 0);
+			// v A enlever ? v
+			// clfd = accept(fdsock, reinterpret_cast<struct sockaddr *>(&ssock), reinterpret_cast<socklen_t *>(sizeof(ssock)));
+			// ^ A enlever ? ^
+			if (clfd == -1)
+				std::cerr << "[!] Failed to accept a new client on port " << port << ":" << strerror(errno) << "\n" << std::endl;
+			if (unblockFD(clfd) == 1)
+			{
+				std::cerr << "[!] Failed setting the fd of a new client on port " << port << " to non-bloquant";
+				std::cerr << ": " << strerror(errno) << ". Closing the connection...\n" << std::endl;
+				close(clfd);
+			}
+			Client	cl(clfd, port);
+			this->_clients.push_back(cl);
+			std::cout << "[+] Accepted new client on port " << port << ". Gave him fd " << clfd << "\n" << std::endl;
 		}
-		if (this->_servs.empty())
-		{
-			std::cerr << std::endl << "[-] There is no server running anymore. Shutting down the program...";
-			g_sigint = true;
-		}
-		sb++;
+		itport++;
 	}
-}
-
-void	Manager::newClient(Server &sb, int port, int socket)
-{
-	Client		cl(sb);
-	std::string	name;
-
-	name = sb.getName();
-	cl.setFD(accept(socket, 0, 0));
-	// cl.setFD(accept(socket, reinterpret_cast<struct sockaddr *>(&this->_structsock), reinterpret_cast<socklen_t *>(&this->_addr)));
-	// ^ A enlever ? ^
-	if (cl.getFD() == -1)
-	{
-		std::cerr << "[!] Failed to accept new client on " << name << ":" << port << ":" << strerror(errno) << std::endl;
-		return ;
-	}
-	if (setNonblockingFD(cl.getFD()) == 1)
-	{
-		std::cerr << "[!] Failed setting the fd of a new client of " << name << ":" << port << " to non-bloquant";
-		std::cerr << ": " << strerror(errno) << ". Closed the connection" << std::endl;
-		return ;
-	}
-	this->_clients.push_back(cl);
-	std::cout << "[+] Accepted new client on " << name << ":" << port << ". Gave him fd " << cl.getFD() << std::endl;
 }
 
 void	Manager::checkClients(void)
@@ -243,7 +233,8 @@ void	Manager::checkClients(void)
 		fd = (*it).getFD();
 		if (FD_ISSET(fd, &this->_errset))
 		{
-			std::cerr << "[-] An error occured with a client: fd " << fd << ". Closed the connection\n" << std::endl;
+			std::cerr << "[-] An error occured with a client (fd " << fd << ") on port " << (*it).getPort();
+			std::cerr << ". Closing the connection...\n" << std::endl;
 			close(fd);
 			it = this->_clients.erase(it) - 1;
 		}
@@ -252,7 +243,8 @@ void	Manager::checkClients(void)
 			bytes = (*it).readRequest();
 			if (bytes < 0)
 			{
-				std::cerr << "[-] An error occured when reading the request of a client: " << strerror(errno) << ". fd: " << fd << ". Closed the connection\n" << std::endl;
+				std::cerr << "[-] An error occured when reading the request of a client (fd " << fd << ") on port " << (*it).getPort();
+				std::cout << ". Closing the connection...\n" << std::endl;
 				close(fd);
 				it = this->_clients.erase(it) - 1;
 			}
@@ -266,11 +258,13 @@ void	Manager::checkClients(void)
 				response = this->buildResponse((*it), status);
 				if (send(fd, response.data(), response.size(), 0) <= 0)
 				{
-					std::cerr << "[-] An error occured when sending the response to a client: fd " << fd << ". Closed the connection\n" << std::endl;
+					std::cerr << "[-] An error occured when sending the response to a client (fd " << fd << ") on port " << (*it).getPort();
+					std::cerr << ". Closing the connection...\n" << std::endl;
 					close(fd);
 					it = this->_clients.erase(it) - 1;
 				}
-				(*it).clear();
+				else
+					(*it).clear();
 			}
 			else if (!(*it).keepAlive())
 			{
@@ -288,32 +282,41 @@ std::string	Manager::parseRequest(Client &cl)
 		return ("102 Processing");
 	std::string		status;
 	std::string		header;
+	std::string		line;
+	std::string		host;
+	std::string		port;
+	std::string		name;
+	std::string		length;
+
+	std::string		method;
 	std::string		root;
 	std::string		path;
-	std::string		line;
-	std::string		method;
 	std::string		file;
 	std::string		version;
 	std::string		keepalive;
 
 	header = cl.getHeader();
-	Server	tmp(cl.getServer());
-	root = tmp.getRoot();
 	line = header.substr(0, header.find("\r\n"));
+
+	host = header.substr(header.find("Host: ") + 6, header.find("\r\n", header.find("Host: ")));
+	name = host.substr(0, host.find(':'));
+	port = host.substr(name.length() + 1, host.find("\r\n") - name.length());
+	// VirtualServer	tmp = searchServ(name, std::atoi(port));
 	method = line.substr(0, line.find(' '));
 	if (method != "GET" && method != "POST" && method != "DELETE")
 		return ("405 Method Not Allowed");
+	if (file.length() > 0 && *file.begin() != '/')
+		file = '/' + file;
 	file = line.substr((method.length() + 1), (line.find(' ', method.length() + 1) - (method.length() + 1)));
-	if (*file.begin() == '/')
-		file.erase(file.begin());
+	if (file.empty())
+		return ("400 Bad Request");
 	path = root + file;
 	status = cl.openFile(path);
 	if (status != "200 OK")
 		return (status);
-	version = line.substr((method.length() + file.length() + 3), (line.find(' ', method.length() + file.length()) + 2));
+	version = line.substr((method.length() + file.length() + 2), (line.find("\r\n") - (method.length() + file.length() + 3)));
 	if (version != "HTTP/1.1")
 	{
-		std::cout << version << std::endl;
 		cl.getFile().close();
 		return ("505 HTTP Version not supported");
 	}
@@ -353,8 +356,9 @@ std::vector<char>	Manager::buildResponse(Client &cl, std::string status)
 		str = str + "Connection: keep-alive\r\n";
 	else
 		str = str + "Connection: closed\r\n";
+	std::cout << "[*] Response's header sent on " << cl.getPort();
+	std::cout << " (fd " << cl.getFD() << ")\n" << str << std::endl;
 	str = str + "\r\n";
-	std::cout << "[*] Response's header sent to client: fd " << cl.getFD() << ":\n" << str << std::endl;
 	ret.insert(ret.begin(), str.begin(), str.end());
 	ret.insert(ret.end(), cl.getFileContent().begin(), cl.getFileContent().end());
 	str = "\r\n\r\n";

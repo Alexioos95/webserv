@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:05:30 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/11 16:01:51 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/12 15:09:43 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,17 +14,23 @@
 
 int	main(int argc, char **argv)
 {
+	static_cast<void>(argv);
+	// ^ A enlever ^
 	try
 	{
+		Manager	mng;
+
 		if (argc != 2)
 		{
 			std::cerr << "Usage: ./webserv <\"config\".conf>" << std::endl;
 			return (1);
 		}
-		static_cast<void>(argv);
-		Manager	mng;
-		signal(SIGPIPE, SIG_IGN);
-		signal(SIGINT, sigint_handler);
+		if (signal(SIGPIPE, SIG_IGN) == SIG_ERR || signal(SIGINT, sigint_handler) == SIG_ERR \
+			|| signal(SIGQUIT, sigquit_handler) == SIG_ERR)
+		{
+			std::cerr << "[!] Critical error in the program: signal: " << strerror(errno) << std::endl;
+			return (1);
+		}
 		// <- parsing config here. Note: Si la root du serveur contient des / a la fin, enleve les stp.
 		mng.run();
 	}

@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:43:22 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/11 16:14:47 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/12 15:38:26 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,13 +14,13 @@
 
 //////////////////////////////
 // Constructors and Destructor
-Client::Client(Server &serv) : _server(serv), _fd(-1), _toread(true), \
-	_contentlength(0), _maxcontentlength(0), _inrequest(false), _keepalive(true) { }
+Client::Client(int fd, int port) :_port(port), _fd(fd), _contentlength(0), _maxcontentlength(0), \
+	_toread(true), _inrequest(false), _keepalive(true) { }
 
-Client::Client(Client const &rhs) : _server(rhs._server)
+Client::Client(Client const &rhs)
 {
+	this->_port = rhs._port;
 	this->_fd = rhs._fd;
-	this->_toread = rhs._toread;
 	this->_request = rhs._request;
 	this->_header = rhs._header;
 	this->_body = rhs._body;
@@ -28,6 +28,7 @@ Client::Client(Client const &rhs) : _server(rhs._server)
 	this->_filecontent = rhs._filecontent;
 	this->_contentlength = rhs._contentlength;
 	this->_maxcontentlength = rhs._maxcontentlength;
+	this->_toread = rhs._toread;
 	this->_inrequest = rhs._inrequest;
 	this->_keepalive = rhs._keepalive;
 }
@@ -42,18 +43,18 @@ Client::~Client(void)
 // Overload
 Client	&Client::operator=(Client const &rhs)
 {
-	this->_server = rhs._server;
+	if (this->_file.is_open())
+		this->_file.close();
+	this->_port = rhs._port;
 	this->_fd = rhs._fd;
-	this->_toread = rhs._toread;
 	this->_request = rhs._request;
 	this->_header = rhs._header;
 	this->_body = rhs._body;
-	if (this->_file.is_open())
-		this->_file.close();
 	this->_filepath = rhs._filepath;
 	this->_filecontent = rhs._filecontent;
 	this->_contentlength = rhs._contentlength;
 	this->_maxcontentlength = rhs._maxcontentlength;
+	this->_toread = rhs._toread;
 	this->_inrequest = rhs._inrequest;
 	this->_keepalive = rhs._keepalive;
 	return (*this);
@@ -75,8 +76,8 @@ void	Client::setToRead(bool state)
 
 //////////////////////////////
 // Getters
-Server	&Client::getServer(void)
-{ return (this->_server); }
+int	Client::getPort(void) const
+{ return (this->_port); }
 
 int	Client::getFD(void) const
 { return (this->_fd); }
@@ -99,11 +100,11 @@ int	Client::getContentLength(void) const
 bool	Client::toRead(void) const
 { return (this->_toread); }
 
-bool	Client::fileIsOpen(void) const
-{ return (this->_file.is_open()); }
-
 bool	Client::inRequest(void) const
 { return (this->_inrequest); }
+
+bool	Client::fileIsOpen(void) const
+{ return (this->_file.is_open()); }
 
 bool	Client::keepAlive(void) const
 { return (this->_keepalive); }
@@ -124,13 +125,17 @@ int	Client::readRequest(void)
 	this->_request = this->_request + buffer;
 	pos = this->_request.find("\r\n\r\n");
 	if (pos == std::string::npos)
-		std::cout << "[*] Buffer of client: fd " << this->_fd << ":" << std::endl << this->_header << std::endl;
+	{
+		std::cout << "[*] Buffer of client (fd " << this->_fd << ") on port " << this->_port << "\n";
+		std::cout << this->_header << "\n" << std::endl;
+	}
 	else
 	{
 		if (this->_header.find("\r\n\r\n") == std::string::npos)
 		{
 			this->_header = this->_request.substr(0, pos + 4);
-			std::cout << "[*] Header of client: fd " << this->_fd << ":" << std::endl << this->_header.substr(0, this->_header.length() - 6) << std::endl;
+			std::cout << "[*] Header of client (fd " << this->_fd << ") on port " << this->_port << "\n";
+			std::cout << this->_header.substr(0, this->_header.length() - 4) << "\n" << std::endl;
 			this->_request.erase(0, pos + 4);
 			if (this->_request.find("Content-Length: ") == std::string::npos)
 				this->_toread = false;
@@ -138,13 +143,14 @@ int	Client::readRequest(void)
 			{
 				pos = this->_request.find("Content-Length: ");
 				nb = this->_request.substr(pos + 16, this->_request.find("\r\n", pos) - pos);
-				this->_maxcontentlength = std::atoi(nb.c_str());
+				this->_maxcontentlength = atoi(nb.c_str());
 			}
 		}
 		else
 		{
 			this->_body = this->_request.substr(0, pos + 4);
-			std::cout << "[*] Body of client: fd " << this->_fd << ":" << std::endl << this->_body << std::endl;
+			std::cout << "[*] Body of client (fd " << this->_fd << ") on port " << this->_port << "\n";
+			std::cout << this->_body << "\n" << std::endl;
 			this->_request.erase(0, pos + 4);
 			this->_toread = false;
 		}
@@ -210,5 +216,4 @@ void	Client::clear(void)
 	this->_contentlength = 0;
 	this->_maxcontentlength = 0;
 	this->_inrequest = false;
-	this->_toread = true;
 }

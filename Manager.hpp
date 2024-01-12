@@ -13,13 +13,12 @@
 #ifndef MANAGER_HPP
 # define MANAGER_HPP
 
+# include <map>				// map
 # include <ctime>			// functions time
 # include <cerrno>			// errno
 # include <vector>			// vector
-# include <cstdlib>			// exit
 # include <fcntl.h>			// fcntl
 # include <fstream>			// fstream
-# include <cstdlib>			// itoa
 # include <string.h>		// strerror
 # include <signal.h>		// signal
 # include <iostream>		// std::cout/cerr
@@ -35,8 +34,10 @@
 # include <sys/select.h>
 
 extern bool g_sigint;
-class Server;
+
 class Client;
+class PortSocket;
+class VirtualServer;
 
 class Manager
 {
@@ -49,8 +50,10 @@ class Manager
 			{ };
 		class SelectException : public std::exception
 			{ public: const char	*what(void) const throw(); };
+	// Getters
+		std::map<int, int>			&getSockets(void);
 	// Functions
-		void	run(void);
+		void						run(void);
 
 	private:
 	// Constructors
@@ -60,13 +63,13 @@ class Manager
 	// Functions
 		void						shutdown(void);
 		void						manageFDSets(void);
-		void						checkServers(void);
-		void						newClient(Server &sb, int port, int socket);
+		void						checkPorts(void);
 		void						checkClients(void);
 		std::string					parseRequest(Client &cl);
 		std::vector<char>			buildResponse(Client &cl, std::string status);
 	// Attributes
-		std::vector<Server>			_servs;
+		std::map<int, int>			_sockets;
+		std::vector<VirtualServer>	_servs;
 		std::vector<Client>			_clients;
 		fd_set						_rset;
 		fd_set						_wset;
@@ -75,6 +78,7 @@ class Manager
 
 void		*ft_memset(void *s, int c, size_t n);
 void		sigint_handler(int sig);
+void		sigquit_handler(int sig);
 std::string	getTime(std::time_t time);
 std::string	itoa(int nbi);
 std::string	getMime(Client &cl);

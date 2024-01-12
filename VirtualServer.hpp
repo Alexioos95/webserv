@@ -1,52 +1,58 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Server.hpp                                    :+:      :+:    :+:   */
+/*   VirtualVirtualServer.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/12/12 09:33:30 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/10 09:07:05 by apayen           ###   ########.fr       */
+/*   Created: 2024/01/12 12:00:43 by apayen            #+#    #+#             */
+/*   Updated: 2024/01/12 12:00:43 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef SERVER_HPP
-# define SERVER_HPP
+#ifndef VIRTUALSERVER_HPP
+# define VIRTUALSERVER_HPP
 
-# include "Manager.hpp"
-extern bool g_sigint;
+# include <map>				// map
+# include <vector>			// vector
+# include <errno.h>			// errno
+# include <cstring>			// strerror, close
+# include <iostream>		// cout, string
+# include <unistd.h>		// close
+# include <netinet/in.h>	// socket functions
 
-class Server
+class VirtualServer
 {
 	public:
 	// Constructors and destructor
-		Server(std::string server_name, std::string root, std::vector<int> ports);
-		Server(Server const &rhs);
-		~Server(void);
+		VirtualServer(std::string name, std::string root, std::vector<int> ports, std::map<int, int> &m, int bodymax);
+		VirtualServer(VirtualServer const &rhs);
+		~VirtualServer(void);
 	// Exceptions
 		class CreationException : public std::exception
-			{ public: const char	*what(void) const throw(); };
+			{  };
 	// Overload
-		Server						&operator=(Server const &rhs);
+		VirtualServer				&operator=(VirtualServer const &rhs);
 	// Getters
 		std::string					getName(void) const;
 		std::string					getRoot(void) const;
-		std::vector<int>			&getSocket(void);
 		std::vector<int>			&getPorts(void);
+		int							getBodyMax(void) const;
 
 	private:
 	// Constructors
-		Server(void);
+		VirtualServer(void);
+	// Functions
+		bool						bindPort(std::map<int, int> &m, int port);
+
 	// Attributes
-		std::string					_server_name;
+		std::string					_name;
 		std::string					_root;
-		std::vector<int> 			_socket;
 		std::vector<int>			_ports;
-		struct sockaddr_in			_structsock;
-		int							_addr;
+		int							_bodymax;
 };
 
 void	*ft_memset(void *s, int c, size_t n);
-int		setNonblockingFD(int fd);
+int		unblockFD(int fd);
 
 #endif
