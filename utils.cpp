@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/04 14:35:24 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/12 14:45:03 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/15 12:11:31 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,18 +28,6 @@ void	*ft_memset(void *s, int c, size_t n)
 		i++;
 	}
 	return (s);
-}
-
-int	unblockFD(int fd)
-{
-	int flags;
-
-	flags = fcntl(fd, F_GETFL, 0);
-	if (flags == -1)
-		return (1);
-	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
-		return (1);
-	return (0);
 }
 
 void	sigint_handler(int sig)

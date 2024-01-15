@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:43:22 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/12 15:38:26 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/15 12:59:49 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,13 +14,14 @@
 
 //////////////////////////////
 // Constructors and Destructor
-Client::Client(int fd, int port) :_port(port), _fd(fd), _contentlength(0), _maxcontentlength(0), \
-	_toread(true), _inrequest(false), _keepalive(true) { }
+Client::Client(int fd, int port) :_port(port), _fd(fd),  _timer(std::time(0)), \
+	_contentlength(0), _maxcontentlength(0), _toread(true), _inrequest(false), _keepalive(true) { }
 
 Client::Client(Client const &rhs)
 {
 	this->_port = rhs._port;
 	this->_fd = rhs._fd;
+	this->_timer = rhs._timer;
 	this->_request = rhs._request;
 	this->_header = rhs._header;
 	this->_body = rhs._body;
@@ -47,6 +48,7 @@ Client	&Client::operator=(Client const &rhs)
 		this->_file.close();
 	this->_port = rhs._port;
 	this->_fd = rhs._fd;
+	this->_timer = rhs._timer;
 	this->_request = rhs._request;
 	this->_header = rhs._header;
 	this->_body = rhs._body;
@@ -82,6 +84,9 @@ int	Client::getPort(void) const
 int	Client::getFD(void) const
 { return (this->_fd); }
 
+time_t	Client::getTimer(void) const
+{ return (this->_timer); }
+
 std::string	Client::getHeader(void) const
 { return (this->_header); }
 
@@ -97,6 +102,9 @@ std::vector<char>	&Client::getFileContent(void)
 int	Client::getContentLength(void) const
 { return (this->_contentlength); }
 
+int	Client::getMaxContentLength(void) const
+{ return (this->_maxcontentlength); }
+
 bool	Client::toRead(void) const
 { return (this->_toread); }
 
@@ -111,6 +119,10 @@ bool	Client::keepAlive(void) const
 
 //////////////////////////////
 // Functions
+void	Client::actualizeTime(void)
+{ this->_timer = std::time(0); }
+
+
 int	Client::readRequest(void)
 {
 	char		buffer[2048 + 1];
@@ -133,26 +145,32 @@ int	Client::readRequest(void)
 	{
 		if (this->_header.find("\r\n\r\n") == std::string::npos)
 		{
-			this->_header = this->_request.substr(0, pos + 4);
+			this->_header = this->_header + this->_request.substr(0, pos + 4);
 			std::cout << "[*] Header of client (fd " << this->_fd << ") on port " << this->_port << "\n";
 			std::cout << this->_header.substr(0, this->_header.length() - 4) << "\n" << std::endl;
 			this->_request.erase(0, pos + 4);
-			if (this->_request.find("Content-Length: ") == std::string::npos)
+			if (this->_header.find("\r\n\r\n") != std::string::npos \
+				&& this->_header.find("Content-Length: ") == std::string::npos)
 				this->_toread = false;
 			else
 			{
 				pos = this->_request.find("Content-Length: ");
 				nb = this->_request.substr(pos + 16, this->_request.find("\r\n", pos) - pos);
-				this->_maxcontentlength = atoi(nb.c_str());
+				this->_maxcontentlength = std::atoi(nb.c_str());
 			}
 		}
 		else
 		{
-			this->_body = this->_request.substr(0, pos + 4);
+			this->_body = this->_body + this->_request.substr(0, pos + 4);
 			std::cout << "[*] Body of client (fd " << this->_fd << ") on port " << this->_port << "\n";
 			std::cout << this->_body << "\n" << std::endl;
 			this->_request.erase(0, pos + 4);
-			this->_toread = false;
+			this->_contentlength = this->_contentlength + bytes;
+			if (this->_contentlength >= this->_maxcontentlength || this->_body.find("\r\n\r\n") != std::string::npos)
+			{
+				this->_contentlength = 0;
+				this->_toread = false;
+			}
 		}
 	}
 	return (bytes);
@@ -180,6 +198,17 @@ std::string	Client::openFile(std::string path)
 			return ("500 Internal Server Error");
 	}
 	this->_filepath = path;
+	return ("200 OK");
+}
+
+std::string	Client::searchFile(std::string path)
+{
+	std::string	dir;
+	dir = path.substr(0, path.find_last_of("/") + 1);
+	if (access(path.c_str(), F_OK) == -1)
+		return ("404 Not Found");
+	else if (access(dir.c_str(), W_OK | X_OK) == -1)
+		return ("403 Forbidden");
 	return ("200 OK");
 }
 
@@ -214,6 +243,5 @@ void	Client::clear(void)
 	this->_filepath = "";
 	this->_filecontent = tmp;
 	this->_contentlength = 0;
-	this->_maxcontentlength = 0;
 	this->_inrequest = false;
 }

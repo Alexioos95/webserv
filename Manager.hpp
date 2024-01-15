@@ -37,7 +37,7 @@ extern bool g_sigint;
 
 class Client;
 class PortSocket;
-class VirtualServer;
+class Server;
 
 class Manager
 {
@@ -49,31 +49,34 @@ class Manager
 		class SigintException : public std::exception
 			{ };
 		class SelectException : public std::exception
-			{ public: const char	*what(void) const throw(); };
+			{ public: const char		*what(void) const throw(); };
 	// Getters
-		std::map<int, int>			&getSockets(void);
+		std::map<int, int>				&getSockets(void);
 	// Functions
-		void						run(void);
+		void							run(void);
 
 	private:
 	// Constructors
 		Manager(Manager const &rhs);
 	// Overload
-		Manager						&operator=(Manager const &rhs);
+		Manager							&operator=(Manager const &rhs);
 	// Functions
-		void						shutdown(void);
-		void						manageFDSets(void);
-		void						checkPorts(void);
-		void						checkClients(void);
-		std::string					parseRequest(Client &cl);
-		std::vector<char>			buildResponse(Client &cl, std::string status);
+		void							shutdown(void);
+		void							manageFDSets(void);
+		void							managePorts(void);
+		void							manageClients(void);
+		std::string						parseRequest(Client &cl);
+		std::vector<Server>::iterator	searchServ(std::string name, int port);
+		std::vector<char>				buildResponse(Client &cl, std::string status);
+		void							manageTimeout(void);
 	// Attributes
-		std::map<int, int>			_sockets;
-		std::vector<VirtualServer>	_servs;
-		std::vector<Client>			_clients;
-		fd_set						_rset;
-		fd_set						_wset;
-		fd_set						_errset;
+		time_t							_timer;
+		std::map<int, int>				_sockets;
+		std::vector<Server>				_servs;
+		std::vector<Client>				_clients;
+		fd_set							_rset;
+		fd_set							_wset;
+		fd_set							_errset;
 };
 
 void		*ft_memset(void *s, int c, size_t n);

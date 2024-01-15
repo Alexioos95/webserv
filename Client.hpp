@@ -6,13 +6,14 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:41:38 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/12 15:39:43 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/15 12:51:04 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef CLIENT_HPP
 # define CLIENT_HPP
 
+# include <ctime>			// functions time
 # include <cerrno>			// errno
 # include <fstream>			// fstream
 # include <cstdlib>			// atoi
@@ -24,7 +25,7 @@
 # include <sys/types.h>
 # include <sys/socket.h>	// recv
 
-# include "VirtualServer.hpp"
+# include "Server.hpp"
 
 class Client
 {
@@ -41,23 +42,27 @@ class Client
 		void				setKeepAlive(bool state);
 		void				setToRead(bool state);
 	// Getters
-		// info
+		// Info
 		int					getPort(void) const;
 		int					getFD(void) const;
-		// request
+		time_t				getTimer(void) const;
+		// Request
 		std::string			getHeader(void) const;
 		std::fstream		&getFile(void);
 		std::string			getFilePath(void) const;
 		int					getContentLength(void) const;
+		int					getMaxContentLength(void) const;
 		std::vector<char>	&getFileContent(void);
-		// state
+		// State
 		bool				toRead(void) const;
 		bool				inRequest(void) const;
 		bool				fileIsOpen(void) const;
 		bool				keepAlive(void) const;
 	// Function
+		void				actualizeTime(void);
 		int					readRequest(void);
 		std::string			openFile(std::string path);
+		std::string			searchFile(std::string path);
 		std::string			readFile(void);
 		void				clear(void);
 
@@ -68,6 +73,7 @@ class Client
 		// Info
 		int					_port;
 		int					_fd;
+		time_t				_timer;
 		// Request
 		std::string			_request;
 		std::string			_header;

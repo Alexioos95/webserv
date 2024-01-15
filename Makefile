@@ -6,7 +6,7 @@
 #    By: apayen <apayen@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/10/17 14:41:49 by apayen            #+#    #+#              #
-#    Updated: 2024/01/12 13:58:13 by apayen           ###   ########.fr        #
+#    Updated: 2024/01/15 09:30:48 by apayen           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -16,7 +16,7 @@ DIR = build
 SRC = 	$(addprefix $(DIR)/,	\
 		main.cpp				\
 		Manager.cpp				\
-		VirtualServer.cpp		\
+		Server.cpp				\
 		Client.cpp				\
 		utils.cpp)
 

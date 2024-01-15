@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 #include "Manager.hpp"
-#include "VirtualServer.hpp"
+#include "Server.hpp"
 #include "Client.hpp"
 
 //////////////////////////////
@@ -66,8 +66,8 @@ void	Manager::run(void)
 	vec2.push_back(8090);
 	vec2.push_back(8091);
 	vec2.push_back(8092);
-	VirtualServer	tmp("test.com", "./qr", vec, this->_sockets, 99999);
-	VirtualServer	tmp2("netpractice.net", "./np", vec2, this->_sockets, 99999);
+	Server	tmp("test.com", "./qr///////////////", vec, this->_sockets, 99999);
+	Server	tmp2("netpractice.net", "./np///", vec2, this->_sockets, 99999);
 	this->_servs.push_back(tmp);
 	this->_servs.push_back(tmp2);
 	std::cout << std::endl;
@@ -89,8 +89,9 @@ void	Manager::run(void)
 		}
 		else
 		{
-			this->checkPorts();
-			this->checkClients();
+			this->managePorts();
+			this->manageClients();
+			this->manageTimeout();
 		}
 	}
 }
@@ -144,17 +145,17 @@ void	Manager::manageFDSets(void)
 	}
 }
 
-void	Manager::checkPorts(void)
+void	Manager::managePorts(void)
 {
-	std::map<int, int>::iterator			itport;
-	std::map<int, int>::iterator			tmp;
-	std::vector<VirtualServer>::iterator	itserv;
-	std::vector<int>						servport;
-	std::vector<int>::iterator				itservport;
-	struct sockaddr_in						ssock;
-	int										port;
-	int										fdsock;
-	int										clfd;
+	std::map<int, int>::iterator	itport;
+	std::map<int, int>::iterator	tmp;
+	std::vector<Server>::iterator	itserv;
+	std::vector<int>				servport;
+	std::vector<int>::iterator		itservport;
+	struct sockaddr_in				ssock;
+	int								port;
+	int								fdsock;
+	int								clfd;
 
 	itport = this->_sockets.begin();
 	while (itport != this->_sockets.end())
@@ -182,14 +183,14 @@ void	Manager::checkPorts(void)
 				}
 				if (servport.empty())
 				{
-					std::cout << "[-] " << (*itserv).getName() << " doesn't have any port to listen to anymore";
-					std::cout << ". Closing the server..." << "\n" << std::endl;
+					std::cout << "[-] " << (*itserv).getName() << " doesn't have any port to listen to anymore. ";
+					std::cout << "Closing the server..." << "\n" << std::endl;
 					itserv = this->_servs.erase(itserv) - 1;
 				}
 				if (this->_servs.empty())
 				{
-					std::cout << "[-] " << "No more server are running";
-					std::cout << ". Shutting down the program..." << "\n" << std::endl;
+					std::cout << "[-] " << "No more server are running. ";
+					std::cout << "Shutting down the program..." << "\n" << std::endl;
 					this->shutdown();
 				}
 				itserv++;
@@ -204,7 +205,7 @@ void	Manager::checkPorts(void)
 			// ^ A enlever ? ^
 			if (clfd == -1)
 				std::cerr << "[!] Failed to accept a new client on port " << port << ":" << strerror(errno) << "\n" << std::endl;
-			if (unblockFD(clfd) == 1)
+			if (fcntl(clfd, F_SETFL, O_NONBLOCK, FD_CLOEXEC) == -1)
 			{
 				std::cerr << "[!] Failed setting the fd of a new client on port " << port << " to non-bloquant";
 				std::cerr << ": " << strerror(errno) << ". Closing the connection...\n" << std::endl;
@@ -218,7 +219,7 @@ void	Manager::checkPorts(void)
 	}
 }
 
-void	Manager::checkClients(void)
+void	Manager::manageClients(void)
 {
 	std::vector<Client>::iterator	it;
 	int								fd;
@@ -264,7 +265,10 @@ void	Manager::checkClients(void)
 					it = this->_clients.erase(it) - 1;
 				}
 				else
+				{
+					(*it).actualizeTime();
 					(*it).clear();
+				}
 			}
 			else if (!(*it).keepAlive())
 			{
@@ -280,51 +284,97 @@ std::string	Manager::parseRequest(Client &cl)
 {
 	if (cl.inRequest())
 		return ("102 Processing");
-	std::string		status;
-	std::string		header;
-	std::string		line;
-	std::string		host;
-	std::string		port;
-	std::string		name;
-	std::string		length;
-
-	std::string		method;
-	std::string		root;
-	std::string		path;
-	std::string		file;
-	std::string		version;
-	std::string		keepalive;
+	std::vector<Server>::iterator	it;
+	std::string						status;
+	std::string						header;
+	std::string						line;
+	std::string						host;
+	std::string						port;
+	std::string						name;
+	std::string						length;
+	std::string						method;
+	std::string						root;
+	std::string						path;
+	std::string						file;
+	std::string						version;
+	std::string						keepalive;
 
 	header = cl.getHeader();
 	line = header.substr(0, header.find("\r\n"));
-
 	host = header.substr(header.find("Host: ") + 6, header.find("\r\n", header.find("Host: ")));
+	if (line.empty() || host.empty())
+		return ("400 Bad Request");
 	name = host.substr(0, host.find(':'));
 	port = host.substr(name.length() + 1, host.find("\r\n") - name.length());
-	// VirtualServer	tmp = searchServ(name, std::atoi(port));
+	if (name.empty() || port.empty())
+		return ("400 Bad Request");
+	it = searchServ(name, std::atoi(port.c_str()));
+	root = (*it).getRoot();
 	method = line.substr(0, line.find(' '));
 	if (method != "GET" && method != "POST" && method != "DELETE")
 		return ("405 Method Not Allowed");
-	if (file.length() > 0 && *file.begin() != '/')
-		file = '/' + file;
 	file = line.substr((method.length() + 1), (line.find(' ', method.length() + 1) - (method.length() + 1)));
 	if (file.empty())
 		return ("400 Bad Request");
+	else if (file.length() > 0 && *file.begin() != '/')
+		file = '/' + file;
 	path = root + file;
-	status = cl.openFile(path);
+	if (method == "GET" )
+		status = cl.openFile(path);
+	else if (method == "DELETE")
+		status = cl.searchFile(path);
 	if (status != "200 OK")
 		return (status);
 	version = line.substr((method.length() + file.length() + 2), (line.find("\r\n") - (method.length() + file.length() + 3)));
 	if (version != "HTTP/1.1")
 	{
-		cl.getFile().close();
+		if (cl.getFile().is_open())
+			cl.getFile().close();
 		return ("505 HTTP Version not supported");
+	}
+	length = header.substr(header.find("Content-Length: ") + 16, header.find("\r\n", header.find("Content-Length: ")) - 16);
+	if (cl.getMaxContentLength() > std::atoi(length.c_str()))
+	{
+		if (cl.getFile().is_open())
+			cl.getFile().close();
+		return ("413 Request Entity Too Large");
 	}
 	if (header.find("Connection: keep-alive") != std::string::npos)
 		cl.setKeepAlive(true);
 	else
 		cl.setKeepAlive(false);
 	return ("102 Processing");
+}
+
+std::vector<Server>::iterator	Manager::searchServ(std::string name, int port)
+{
+	std::vector<Server>::iterator							servit;
+	std::vector<int>										ports;
+	std::vector<int>::iterator								portit;
+	std::vector<std::vector<Server>::iterator>				res;
+	std::vector<std::vector<Server>::iterator>::iterator	resit;
+
+	servit = this->_servs.begin();
+	while (servit != this->_servs.end())
+	{
+		ports = (*servit).getPorts();
+		portit = ports.begin();
+		while (portit != ports.end())
+		{
+			if ((*portit) == port)
+				res.push_back((servit));
+			portit++;
+		}
+		servit++;
+	}
+	resit = res.begin();
+	while (resit != res.end())
+	{
+		if ((*(*resit)).getName() == name)
+			return ((*resit));
+		resit++;
+	}
+	return (*res.begin());
 }
 
 std::vector<char>	Manager::buildResponse(Client &cl, std::string status)
@@ -344,14 +394,13 @@ std::vector<char>	Manager::buildResponse(Client &cl, std::string status)
 	{
 		str = str + "Last-Modified: " + getTime(st.st_mtime) + "\r\n";
 		str = str + "Content-Length: " + itoa(cl.getContentLength()) + "\r\n";
-
 		str = str + "Content-Type: " + getMime(cl) + "\r\n";
 	}
 	else
 	{
 		// Pages d'erreur perso SI pas presente dans le dir;
 	}
-	str = str + "Cache-control: no-cache\r\n";
+	str = str + "Cache-Control: no-cache, no-store, must-revalidate\r\n";
 	if (cl.keepAlive())
 		str = str + "Connection: keep-alive\r\n";
 	else
@@ -364,4 +413,25 @@ std::vector<char>	Manager::buildResponse(Client &cl, std::string status)
 	str = "\r\n\r\n";
 	ret.insert(ret.end(), str.begin(), str.end());
 	return (ret);
+}
+
+void	Manager::manageTimeout(void)
+{
+	std::vector<Client>::iterator	it;
+	int								fd;
+
+	it = this->_clients.begin();
+	this->_timer = std::time(0);
+	while (it != this->_clients.end())
+	{
+		if ((*it).getTimer() - this->_timer < -29)
+		{
+			fd = (*it).getFD();
+			std::cout << "[-] A client (fd " << fd << ") did not send any request in the allowed time. ";
+			std::cout << "Closing the connection...\n" << std::endl;
+			close(fd);
+			it = this->_clients.erase(it) - 1;
+		}
+		it++;
+	}
 }
