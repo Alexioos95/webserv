@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/12 12:00:43 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/15 12:13:06 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/22 14:11:55 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,14 +25,14 @@
 class Server
 {
 	public:
-	// Constructors and destructor
+	// Constructors and Destructor
 		Server(std::string name, std::string root, std::vector<int> ports, std::map<int, int> &m, int bodymax);
 		Server(Server const &rhs);
 		~Server(void);
 	// Exceptions
 		class CreationException : public std::exception
 			{  };
-	// Overload
+	// Overloads
 		Server				&operator=(Server const &rhs);
 	// Getters
 		std::string			getName(void) const;
@@ -41,11 +41,8 @@ class Server
 		int					getBodyMax(void) const;
 
 	private:
-	// Constructors
-		Server(void);
 	// Functions
 		bool				bindPort(std::map<int, int> &m, int port);
-
 	// Attributes
 		std::string			_name;
 		std::string			_root;

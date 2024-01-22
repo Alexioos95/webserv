@@ -21,9 +21,8 @@
 # include <fstream>			// fstream
 # include <string.h>		// strerror
 # include <signal.h>		// signal
-# include <iostream>		// std::cout/cerr
+# include <iostream>		// cout/cerr
 # include <exception>		// exceptions
-# include <sys/stat.h>		// stat
 # include <arpa/inet.h>		// functions HostTONetwork
 # include <sys/socket.h>	// sockets
 # include <netinet/in.h>	// struct sockaddr_in
@@ -42,48 +41,41 @@ class Server;
 class Manager
 {
 	public:
-	// Constructors and destructor
+	// Constructors and Destructor
 		Manager(void);
 		~Manager(void);
 	// Exceptions
 		class SigintException : public std::exception
 			{ };
 		class SelectException : public std::exception
-			{ public: const char		*what(void) const throw(); };
+			{ public: const char				*what(void) const throw(); };
 	// Getters
-		std::map<int, int>				&getSockets(void);
+		std::map<int, int>						&getSockets(void);
 	// Functions
-		void							run(void);
+		void									run(void);
+		std::vector<Server>::iterator			searchServ(std::string name, int port);
 
 	private:
-	// Constructors
-		Manager(Manager const &rhs);
-	// Overload
-		Manager							&operator=(Manager const &rhs);
 	// Functions
-		void							shutdown(void);
-		void							manageFDSets(void);
-		void							managePorts(void);
-		void							manageClients(void);
-		std::string						parseRequest(Client &cl);
-		std::vector<Server>::iterator	searchServ(std::string name, int port);
-		std::vector<char>				buildResponse(Client &cl, std::string status);
-		void							manageTimeout(void);
+		void									shutdown(void);
+		void									manageFDSets(void);
+		void									managePorts(void);
+		void									manageClients(void);
+		std::string								parseRequest(Client &cl);
+		std::vector<char>						buildResponse(Client &cl, std::string status);
+		void									manageTimeout(void);
 	// Attributes
-		time_t							_timer;
-		std::map<int, int>				_sockets;
-		std::vector<Server>				_servs;
-		std::vector<Client>				_clients;
-		fd_set							_rset;
-		fd_set							_wset;
-		fd_set							_errset;
+		time_t									_timer;
+		std::map<int, int>						_sockets;
+		std::vector<Server>						_servs;
+		std::vector<Client>						_clients;
+		fd_set									_rset;
+		fd_set									_wset;
+		fd_set									_errset;
 };
 
 void		*ft_memset(void *s, int c, size_t n);
 void		sigint_handler(int sig);
 void		sigquit_handler(int sig);
-std::string	getTime(std::time_t time);
-std::string	itoa(int nbi);
-std::string	getMime(Client &cl);
 
 #endif

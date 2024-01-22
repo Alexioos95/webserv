@@ -15,7 +15,7 @@
 #include "Client.hpp"
 
 //////////////////////////////
-// Exception
+// Exceptions
 const char	*Manager::SelectException::what(void) const throw()
 { return ("Select: "); }
 
@@ -33,19 +33,6 @@ Manager::~Manager(void)
 		close((*it).second);
 		it++;
 	}
-}
-
-//////////////////////////////
-// Overload
-Manager	&Manager::operator=(Manager const &rhs)
-{
-	this->shutdown();
-	this->_servs = rhs._servs;
-	this->_clients = rhs._clients;
-	this->_rset = rhs._rset;
-	this->_wset = rhs._wset;
-	this->_errset = rhs._errset;
-	return (*this);
 }
 
 //////////////////////////////
@@ -252,98 +239,32 @@ void	Manager::manageClients(void)
 		}
 		else if (FD_ISSET(fd, &this->_wset))
 		{
-			status = this->parseRequest((*it));
-			rdstatus = (*it).readFile();
-			if (status != "102 Processing" || rdstatus != "102 Processing")
-			{
-				response = this->buildResponse((*it), status);
-				if (send(fd, response.data(), response.size(), 0) <= 0)
+			// status = this->parseRequest((*it));
+			// rdstatus = (*it).readFile();
+			// if (status != "102 Processing" || rdstatus != "102 Processing")
+			// {
+				bytes = (*it).writeResponse();
+				if (bytes < 0)
 				{
 					std::cerr << "[-] An error occured when sending the response to a client (fd " << fd << ") on port " << (*it).getPort();
 					std::cerr << ". Closing the connection...\n" << std::endl;
 					close(fd);
 					it = this->_clients.erase(it) - 1;
 				}
-				else
-				{
-					(*it).actualizeTime();
-					(*it).clear();
-				}
-			}
-			else if (!(*it).keepAlive())
-			{
-				close(fd);
-				it = this->_clients.erase(it) - 1;
-			}
+				// else
+				// {
+				// 	(*it).actualizeTime();
+				// 	(*it).clear();
+				// }
+		// 	}
+		// 	else if (!(*it).keepAlive())
+		// 	{
+		// 		close(fd);
+		// 		it = this->_clients.erase(it) - 1;
+		// 	}
 		}
 		it++;
 	}
-}
-
-std::string	Manager::parseRequest(Client &cl)
-{
-	if (cl.inRequest())
-		return ("102 Processing");
-	std::vector<Server>::iterator	it;
-	std::string						status;
-	std::string						header;
-	std::string						line;
-	std::string						host;
-	std::string						port;
-	std::string						name;
-	std::string						length;
-	std::string						method;
-	std::string						root;
-	std::string						path;
-	std::string						file;
-	std::string						version;
-	std::string						keepalive;
-
-	header = cl.getHeader();
-	line = header.substr(0, header.find("\r\n"));
-	host = header.substr(header.find("Host: ") + 6, header.find("\r\n", header.find("Host: ")));
-	if (line.empty() || host.empty())
-		return ("400 Bad Request");
-	name = host.substr(0, host.find(':'));
-	port = host.substr(name.length() + 1, host.find("\r\n") - name.length());
-	if (name.empty() || port.empty())
-		return ("400 Bad Request");
-	it = searchServ(name, std::atoi(port.c_str()));
-	root = (*it).getRoot();
-	method = line.substr(0, line.find(' '));
-	if (method != "GET" && method != "POST" && method != "DELETE")
-		return ("405 Method Not Allowed");
-	file = line.substr((method.length() + 1), (line.find(' ', method.length() + 1) - (method.length() + 1)));
-	if (file.empty())
-		return ("400 Bad Request");
-	else if (file.length() > 0 && *file.begin() != '/')
-		file = '/' + file;
-	path = root + file;
-	if (method == "GET" )
-		status = cl.openFile(path);
-	else if (method == "DELETE")
-		status = cl.searchFile(path);
-	if (status != "200 OK")
-		return (status);
-	version = line.substr((method.length() + file.length() + 2), (line.find("\r\n") - (method.length() + file.length() + 3)));
-	if (version != "HTTP/1.1")
-	{
-		if (cl.getFile().is_open())
-			cl.getFile().close();
-		return ("505 HTTP Version not supported");
-	}
-	length = header.substr(header.find("Content-Length: ") + 16, header.find("\r\n", header.find("Content-Length: ")) - 16);
-	if (cl.getMaxContentLength() > std::atoi(length.c_str()))
-	{
-		if (cl.getFile().is_open())
-			cl.getFile().close();
-		return ("413 Request Entity Too Large");
-	}
-	if (header.find("Connection: keep-alive") != std::string::npos)
-		cl.setKeepAlive(true);
-	else
-		cl.setKeepAlive(false);
-	return ("102 Processing");
 }
 
 std::vector<Server>::iterator	Manager::searchServ(std::string name, int port)
@@ -375,44 +296,6 @@ std::vector<Server>::iterator	Manager::searchServ(std::string name, int port)
 		resit++;
 	}
 	return (*res.begin());
-}
-
-std::vector<char>	Manager::buildResponse(Client &cl, std::string status)
-{
-	struct stat 		st;
-	std::vector<char>	ret;
-	std::string			str;
-
-	if (status == "102 Processing")
-		status = "200 OK";
-	if (status == "200 OK" && stat(cl.getFilePath().c_str(), &st) == -1)
-		status = "500 Internal Server Error";
-	str = "HTTP/1.1 " + status + "\r\n";
-	str = str + "Date: " + getTime(std::time(0)) + "\r\n";
-	str = str + "Server: Webserv-42 (Linux)\r\n";
-	if (status == "200 OK")
-	{
-		str = str + "Last-Modified: " + getTime(st.st_mtime) + "\r\n";
-		str = str + "Content-Length: " + itoa(cl.getContentLength()) + "\r\n";
-		str = str + "Content-Type: " + getMime(cl) + "\r\n";
-	}
-	else
-	{
-		// Pages d'erreur perso SI pas presente dans le dir;
-	}
-	str = str + "Cache-Control: no-cache, no-store, must-revalidate\r\n";
-	if (cl.keepAlive())
-		str = str + "Connection: keep-alive\r\n";
-	else
-		str = str + "Connection: closed\r\n";
-	std::cout << "[*] Response's header sent on " << cl.getPort();
-	std::cout << " (fd " << cl.getFD() << ")\n" << str << std::endl;
-	str = str + "\r\n";
-	ret.insert(ret.begin(), str.begin(), str.end());
-	ret.insert(ret.end(), cl.getFileContent().begin(), cl.getFileContent().end());
-	str = "\r\n\r\n";
-	ret.insert(ret.end(), str.begin(), str.end());
-	return (ret);
 }
 
 void	Manager::manageTimeout(void)
