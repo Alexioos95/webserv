@@ -92,8 +92,6 @@ void	Manager::shutdown(void)
 	it = this->_clients.begin();
 	while (it != this->_clients.end())
 	{
-		if ((*it).fileIsOpen())
-			(*it).getFile().close();
 		close((*it).getFD());
 		it++;
 	}
@@ -198,7 +196,7 @@ void	Manager::managePorts(void)
 				std::cerr << ": " << strerror(errno) << ". Closing the connection...\n" << std::endl;
 				close(clfd);
 			}
-			Client	cl(clfd, port);
+			Client	cl(this, clfd, port);
 			this->_clients.push_back(cl);
 			std::cout << "[+] Accepted new client on port " << port << ". Gave him fd " << clfd << "\n" << std::endl;
 		}
@@ -232,36 +230,29 @@ void	Manager::manageClients(void)
 			if (bytes < 0)
 			{
 				std::cerr << "[-] An error occured when reading the request of a client (fd " << fd << ") on port " << (*it).getPort();
-				std::cout << ". Closing the connection...\n" << std::endl;
+				std::cerr << ". Closing the connection...\n" << std::endl;
 				close(fd);
 				it = this->_clients.erase(it) - 1;
 			}
 		}
 		else if (FD_ISSET(fd, &this->_wset))
 		{
-			// status = this->parseRequest((*it));
-			// rdstatus = (*it).readFile();
-			// if (status != "102 Processing" || rdstatus != "102 Processing")
-			// {
-				bytes = (*it).writeResponse();
-				if (bytes < 0)
+			bytes = (*it).writeResponse();
+			if (bytes == 0)
+			{
+				if (!(*it).keepAlive())
 				{
-					std::cerr << "[-] An error occured when sending the response to a client (fd " << fd << ") on port " << (*it).getPort();
-					std::cerr << ". Closing the connection...\n" << std::endl;
 					close(fd);
 					it = this->_clients.erase(it) - 1;
 				}
-				// else
-				// {
-				// 	(*it).actualizeTime();
-				// 	(*it).clear();
-				// }
-		// 	}
-		// 	else if (!(*it).keepAlive())
-		// 	{
-		// 		close(fd);
-		// 		it = this->_clients.erase(it) - 1;
-		// 	}
+			}
+			else if (bytes < 0)
+			{
+				std::cerr << "[-] An error occured when sending the response to a client (fd " << fd << ") on port " << (*it).getPort();
+				std::cerr << ". Closing the connection...\n" << std::endl;
+				close(fd);
+				it = this->_clients.erase(it) - 1;
+			}
 		}
 		it++;
 	}
@@ -307,7 +298,7 @@ void	Manager::manageTimeout(void)
 	this->_timer = std::time(0);
 	while (it != this->_clients.end())
 	{
-		if ((*it).getTimer() - this->_timer < -29)
+		if ((*it).getTimer() - this->_timer < -9)
 		{
 			fd = (*it).getFD();
 			std::cout << "[-] A client (fd " << fd << ") did not send any request in the allowed time. ";

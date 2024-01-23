@@ -6,54 +6,24 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/22 16:18:22 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/23 14:30:32 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Request.hpp"
 #include "Manager.hpp"
+#include "Request.hpp"
+#include "Client.hpp"
 
 //////////////////////////////
 // Constructors and Destructor
-Request::Request(Client &cl) : _client(cl), _contentlength(0), _maxcontentlength(0)
-{ }
-
-// Request::Request(Request const &rhs)
-// {
-// 	this->_client = rhs._client;
-// 	this->_request = rhs._request;
-// 	this->_header = rhs._header;
-// 	this->_body = rhs._body;
-// 	this->_filepath = rhs._filepath;
-// 	this->_filecontent = rhs._filecontent;
-// 	this->_contentlength = rhs._contentlength;
-// 	this->_maxcontentlength = rhs._maxcontentlength;
-// }
+Request::Request(Client &cl) : _file(-1), _contentlength(0), _maxcontentlength(0), \
+	_client(cl), _inparse(true), _inprocess(false), _inbuild(false), _inwrite(false) { }
 
 Request::~Request(void) { }
 
 //////////////////////////////
-// Overloads
-Request	&Request::operator=(Request const &rhs)
-{
-	if (this != &rhs)
-	{
-		this->_request = rhs._request;
-		this->_header = rhs._header;
-		this->_body = rhs._body;
-		this->_filepath = rhs._filepath;
-		this->_response = rhs._response;
-		this->_headerresponse = rhs._headerresponse;
-		this->_bodyresponse = rhs._bodyresponse;
-		this->_contentlength = rhs._contentlength;
-		this->_maxcontentlength = rhs._maxcontentlength;
-	}
-	return (*this);
-}
-
-//////////////////////////////
 // Functions: public
-int	Request::read(void)
+int	Request::reader(void)
 {
 	char		buffer[2048 + 1];
 	int			bytes;
@@ -110,52 +80,75 @@ int	Request::read(void)
 	return (bytes);
 }
 
-int	Request::write(void)
+int	Request::writer(void)
 {
-	std::string	status;
-
-	if (!this->_client.inRequest())
+	if (this->_inparse)
 	{
 		this->_client.setInRequest(true);
-		status = this->parse();
-		if (status == "102 Processing")
+		this->_status = this->parse();
+		if (this->_status == "102 Processing")
 		{
 			if (this->_method == "GET")
-				status = this->open();
+				this->_status = this->openf();
 			if (this->_method == "DELETE")
-				status = this->del();
+				this->_status = this->del();
 			if (this->_method == "POST")
-				status = this->create();
+				this->_status = this->create();
 		}
+		this->_inparse = false;
+		this->_inprocess = true;
 	}
-	if (this->_client.inRequest())
+	if (this->_inprocess)
 	{
-		if (this->_method == "GET")
-			status = this->get();
-		else if (this->_method == "POST")
-			status = this->post();
-		if (status == "200 OK")
-			this->_client.setInRequest(false);
-	}
-	if (status == "102 Processing")
-		return (1);
-	if (!this->_client.inRequest())
-	{
-		if (status != "102 Processing")
+		if (this->_status == "102 Processing")
 		{
-			// Handle error;
+			if (this->_method == "GET")
+				this->_status = this->get();
+			else if (this->_method == "POST")
+				this->_status = this->post();
+			if (this->_status == "200 OK" || this->_status == "202 Created")
+			{
+				this->_inprocess = false;
+				this->_inbuild = true;
+			}
 		}
-		this->buildResponse(status);
-		send(fd, response.data(), response.size(), 0) <= 0)
+		if (this->_status != "102 Processing" && this->_status != "200 OK" && this->_status != "202 Created")
+		{
+			// Handle error read;
+		}
 	}
+	if (this->_inbuild)
+	{
+		this->buildResponse(this->_status);
+		this->_inbuild = false;
+		this->_inwrite = true;
+	}
+	if (this->_inwrite)
+	{
+		size_t						len;
+		std::vector<char>::iterator	it;
+
+		len = this->_response.size();
+		if (len > 2048)
+			len = 2048;
+		it = this->_response.begin() + len;
+		if (send(this->_client.getFD(), this->_response.data(), len, 0) <= 0)
+			return (0);
+		this->_response.erase(this->_response.begin(), it);
+		if (this->_response.empty())
+		{
+			this->_inwrite = false;
+			this->_client.setInRequest(false);
+			this->clear();
+		}
+	}
+	return (1);
 }
 
 //////////////////////////////
 // Functions: private
 std::string	Request::parse(void)
 {
-	if (this->_client.inRequest())
-		return ("102 Processing");
 	size_t							pos;
 	std::string						line;
 	std::string						host;
@@ -179,7 +172,7 @@ std::string	Request::parse(void)
 	port = host.substr(this->_name.length() + 1, host.find("\r\n") - this->_name.length());
 	if (this->_name.empty() || port.empty())
 		return ("400 Bad Request");
-	it = this->_client.getManager().searchServ(this->_name, std::atoi(port.c_str()));
+	it = this->_client.getManager()->searchServ(this->_name, std::atoi(port.c_str()));
 	root = (*it).getRoot();
 	this->_method = line.substr(0, line.find(' '));
 	if (this->_method != "GET" && this->_method != "POST" && this->_method != "DELETE")
@@ -206,7 +199,7 @@ std::string	Request::parse(void)
 		if ((*it).getBodyMax() < std::atoi(length.c_str()))
 			return ("413 Request Entity Too Large");
 	}
-	else if (this->_method == "GET" || this->_method == "POST")
+	else if (this->_method == "POST")
 		return ("400 Bad Request");
 	if (this->_header.find("Connection: keep-alive") == std::string::npos)
 		this->_client.setKeepAlive(false);
@@ -215,10 +208,10 @@ std::string	Request::parse(void)
 	return ("102 Processing");
 }
 
-std::string	Request::open(void)
+std::string	Request::openf(void)
 {
 	errno = 0;
-	this->_file.open(this->_filepath.c_str(), std::ios::in);
+	this->_file = open(this->_filepath.c_str(), O_RDONLY);
 	if (errno)
 	{
 		if (errno == ELOOP)
@@ -262,7 +255,7 @@ std::string	Request::create(void)
 	if (access(this->_filepath.c_str(), F_OK) != -1)
 		return ("409 Conflict");
 	errno = 0;
-	this->_file.open(this->_filepath.c_str(), std::fstream::in | std::fstream::out | std::fstream::trunc);
+	this->_file = open(this->_filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC);
 	if (errno)
 	{
 		if (errno == ELOOP)
@@ -282,20 +275,23 @@ std::string	Request::create(void)
 std::string	Request::get(void)
 {
 	char			buffer[2048];
-	std::streamsize	size;
+	ssize_t			bytes;
 
-	this->_file.read(buffer, 2048);
-	if (this->_file.fail() && !this->_file.eof())
+	bytes = read(this->_file, buffer, 2048);
+	if (bytes < 0)
 	{
 		this->_bodyresponse.erase(this->_bodyresponse.begin(), this->_bodyresponse.end());
+		close(this->_file);
 		return ("500 Internal Server Error");
 	}
-	size = this->_file.gcount();
-	this->_bodyresponse.insert(this->_bodyresponse.end(), &buffer[0], &buffer[size]);
-	this->_contentlength = this->_contentlength + size;
+	this->_bodyresponse.insert(this->_bodyresponse.end(), &buffer[0], &buffer[bytes]);
+	this->_contentlength = this->_contentlength + bytes;
 	this->_client.setInRequest(true);
-	if (size < 2048)
+	if (bytes < 2048)
+	{
+		close(this->_file);
 		return ("200 OK");
+	}
 	return ("102 Processing");
 }
 
@@ -303,34 +299,33 @@ std::string	Request::post(void)
 {
 	size_t	i;
 	size_t	len;
+	ssize_t	bytes;
 
 	len = this->_body.length();
 	i = len;
 	if (i > 2048)
 		i = 2048;
-	this->_file.write(this->_body.c_str(), i);
-	if (this->_file.fail())
+	bytes = write(this->_file, this->_body.c_str(), i);
+	if (bytes <= 0)
 	{
-		this->_file.close();
+		close(this->_file);
 		return ("500 Internal Server Error");
 	}
 	if (i == len)
+	{
+		close(this->_file);
 		return ("200 OK");
+	}
 	return ("102 Processing");
 }
 
-std::vector<char>	Request::buildResponse(std::string status)
+void	Request::buildResponse(std::string status)
 {
-	std::vector<char>	ret;
 	std::string			str;
 
 	str = "HTTP/1.1 " + status + "\r\n";
 	str = str + "Date: " + this->getTime(std::time(0)) + "\r\n";
 	str = str + "Server: Webserv-42 (Linux)\r\n";
-	if (status != "200 OK" && status != "202 Created")
-	{
-		// Handle error;
-	}
 	if (this->_method == "GET" && status == "200 OK")
 	{
 		str = str + "Last-Modified: " + getTime(this->_stat.st_mtime) + "\r\n";
@@ -342,14 +337,13 @@ std::vector<char>	Request::buildResponse(std::string status)
 		str = str + "Connection: keep-alive\r\n";
 	else
 		str = str + "Connection: closed\r\n";
-	std::cout << "[*] Response's header sent on " << cl.getPort();
-	std::cout << " (fd " << cl.getFD() << ")\n" << str << std::endl;
+	std::cout << "[*] Response's header sent on " << this->_client.getPort();
+	std::cout << " (fd " << this->_client.getFD() << ")\n" << str << std::endl;
 	str = str + "\r\n";
-	ret.insert(ret.begin(), str.begin(), str.end());
-	ret.insert(ret.end(), cl.getFileContent().begin(), cl.getFileContent().end());
+	this->_response.insert(this->_response.begin(), str.begin(), str.end());
+	this->_response.insert(this->_response.end(), this->_bodyresponse.begin(), this->_bodyresponse.end());
 	str = "\r\n\r\n";
-	ret.insert(ret.end(), str.begin(), str.end());
-	return (ret);
+	this->_response.insert(this->_response.end(), str.begin(), str.end());
 }
 
 std::string	Request::getTime(std::time_t time)
@@ -401,16 +395,29 @@ std::string	Request::getMime(void)
 	return ("text/html");
 }
 
-// void	Request::clear(void)
-// {
-// 	std::vector<char>	tmp;
+void	Request::clear(void)
+{
+	std::vector<char>	tmp;
 
-// 	this->_client.setToRead(true);
-// 	this->_request = "";
-// 	this->_header = "";
-// 	this->_body = "";
-// 	this->_filepath = "";
-// 	this->_filecontent = tmp;
-// 	this->_contentlength = 0;
-	// this->_client.setInRequest(false);
-// }
+	this->_client.actualizeTime();
+	this->_request = "";
+	this->_header = "";
+	this->_body = "";
+	this->_status = "";
+	this->_name = "";
+	this->_method = "";
+	this->_filepath = "";
+	this->_file = -1;
+	ft_memset(&this->_stat, 0, sizeof(this->_stat));
+	this->_headerresponse = tmp;
+	this->_bodyresponse = tmp;
+	this->_response = tmp;
+	this->_contentlength = 0;
+	this->_maxcontentlength = 0;
+	this->_inparse = true;
+	this->_inprocess = false;
+	this->_inbuild = false;
+	this->_inwrite = false;
+	this->_client.setInRequest(false);
+	this->_client.setToRead(true);
+}

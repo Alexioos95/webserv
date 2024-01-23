@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:38:00 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/22 14:12:09 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/23 14:24:41 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 //////////////////////////////
 // Constructors and Destructor
 Server::Server(std::string name, std::string root, std::vector<int> ports, std::map<int, int> &m, int bodymax) \
-	: _name(name), _root(root), _ports(ports), _bodymax(bodymax)
+	: _name(name), _root(root), _bodymax(bodymax)
 {
 	size_t						i;
 	size_t						err;
@@ -28,6 +28,8 @@ Server::Server(std::string name, std::string root, std::vector<int> ports, std::
 	{
 		if (!this->bindPort(m, (*it)))
 			err++;
+		else
+			this->_ports.push_back((*it));
 		it++;
 	}
 	if (err == ports.size())

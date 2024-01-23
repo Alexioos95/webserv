@@ -6,51 +6,41 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:43:22 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/22 14:17:44 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/23 14:59:34 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
+#include "Request.hpp"
 
 //////////////////////////////
 // Constructors and Destructor
-Client::Client(Manager &main, int fd, int port) : Request(*this), _manager(main), _port(port), _fd(fd), \
-	_timer(std::time(0)), _toread(true), _inrequest(false), _keepalive(true) { }
+Client::Client(Manager *main, int fd, int port) : _manager(main), _fd(fd), \
+	_port(port), _timer(std::time(0)), _toread(true), _inrequest(false), \
+	_keepalive(true), _request(new Request(*this)) { }
 
-// Client::Client(Client const &rhs) : _main(rhs._main)
-// {
-// 	this->_request = rhs._request;
-// 	this->_port = rhs._port;
-// 	this->_fd = rhs._fd;
-// 	this->_timer = rhs._timer;
-// 	this->_toread = rhs._toread;
-// 	this->_inrequest = rhs._inrequest;
-// 	this->_keepalive = rhs._keepalive;
-// }
+Client::Client(Client const &rhs) : _manager(rhs._manager), _fd(rhs._fd), \
+	_port(rhs._port), _timer(rhs._timer), _toread(rhs._toread), \
+	_inrequest(rhs._inrequest), _keepalive(rhs._keepalive), _request(new Request(*this)) { }
 
-Client::~Client(void) { }
+Client::~Client(void)
+{ delete this->_request; }
 
 //////////////////////////////
 // Overloads
-Client	&Client::operator=(Client const &rhs)
+Client	&Client::operator=(Client &rhs)
 {
 	if (this != &rhs)
 	{
-		this->_port = rhs._port;
+		this->_manager = rhs._manager;
 		this->_fd = rhs._fd;
+		this->_port = rhs._port;
 		this->_timer = rhs._timer;
 		this->_toread = rhs._toread;
 		this->_inrequest = rhs._inrequest;
 		this->_keepalive = rhs._keepalive;
-		this->_request = rhs._request;
-		this->_header = rhs._header;
-		this->_body = rhs._body;
-		this->_filepath = rhs._filepath;
-		this->_bodyresponse = rhs._bodyresponse;
-		this->_headerresponse = rhs._headerresponse;
-		this->_response = rhs._response;
-		this->_contentlength = rhs._contentlength;
-		this->_maxcontentlength = rhs._maxcontentlength;
+		delete this->_request;
+		this->_request = new Request(*this);
 	}
 	return (*this);
 }
@@ -68,7 +58,7 @@ void	Client::setKeepAlive(bool state)
 
 //////////////////////////////
 // Getters
-Manager	&Client::getManager(void)
+Manager	*Client::getManager(void)
 { return (this->_manager); }
 
 int	Client::getFD(void) const
@@ -95,7 +85,10 @@ void	Client::actualizeTime(void)
 { this->_timer = std::time(0); }
 
 int	Client::readRequest(void)
-{ return (this->read()); }
+{ return (this->_request->reader()); }
 
 int	Client::writeResponse(void)
-{ return (this->write()); }
+{ return (this->_request->writer()); }
+
+void	Client::del(void)
+{ delete this->_request; }
