@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/25 08:57:06 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/25 16:01:15 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,8 @@
 # include <sys/stat.h>
 # include <sys/types.h>
 # include <sys/socket.h>	// recv
+
+# include "Manager.hpp"
 
 class Request
 {

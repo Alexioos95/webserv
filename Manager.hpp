@@ -34,8 +34,8 @@
 
 extern bool g_sigint;
 
-class Client;
 class Server;
+class Client;
 
 class Manager
 {
@@ -61,6 +61,7 @@ class Manager
 		void									manageClients(void);
 		void									manageTimeout(void);
 	// Attributes
+		struct timeval							_timeout;
 		time_t									_timer;
 		std::map<int, int>						_sockets;
 		std::vector<Server>						_servs;
@@ -70,8 +71,8 @@ class Manager
 		fd_set									_errset;
 };
 
-void		*ft_memset(void *s, int c, size_t n);
-void		sigint_handler(int sig);
-void		sigquit_handler(int sig);
+void	*ft_memset(void *s, int c, size_t n);
+void	sigint_handler(int sig);
+void	sigquit_handler(int sig);
 
 #endif

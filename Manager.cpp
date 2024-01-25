@@ -21,7 +21,8 @@ const char	*Manager::SelectException::what(void) const throw()
 
 //////////////////////////////
 // Constructors and Destructor
-Manager::Manager(void) { }
+Manager::Manager(void)
+{ this->_timeout.tv_sec = 1; this->_timeout.tv_usec = 0; }
 
 Manager::~Manager(void)
 {
@@ -57,37 +58,28 @@ void	Manager::run(void)
 	vec2.push_back(8090);
 	vec2.push_back(8091);
 	vec2.push_back(8092);
-	Server	tmp("test.com", "./qr///////////////", vec, this->_sockets, 99999);
-	Server	tmp2("netpractice.net", "./np///", vec2, this->_sockets, 99999);
+	Server	tmp("test.com", "./qr", vec, this->_sockets, 99999);
+	Server	tmp2("netpractice.net", "./np/", vec2, this->_sockets, 99999);
 	this->_servs.push_back(tmp);
 	this->_servs.push_back(tmp2);
 	std::cout << std::endl;
 	// ^ A enlever, c'est juste pour test. ^
-
 	while (1)
 	{
-		struct timeval t;
-
-		t.tv_sec = 1;
-		t.tv_usec = 0;
 		if (g_sigint == true)
 		{
 			this->shutdown();
 			throw (SigintException());
 		}
 		this->manageFDSets();
-		if (select(FD_SETSIZE, &this->_rset, &this->_wset, &this->_errset, &t) == -1)
+		if (select(FD_SETSIZE, &this->_rset, &this->_wset, &this->_errset, &this->_timeout) == -1)
 		{
 			std::cerr << "\n[!] Critical error on select: " << strerror(errno) << ". Shutting down the program..." << std::endl;
-			this->shutdown();
 			throw (SigintException());
 		}
-		else
-		{
-			this->managePorts();
-			this->manageClients();
-			this->manageTimeout();
-		}
+		this->managePorts();
+		this->manageClients();
+		this->manageTimeout();
 	}
 }
 
@@ -140,45 +132,45 @@ void	Manager::manageFDSets(void)
 
 void	Manager::managePorts(void)
 {
-	std::map<int, int>::iterator	itport;
-	std::map<int, int>::iterator	tmp;
-	std::vector<Server>::iterator	itserv;
 	std::vector<int>				servport;
-	std::vector<int>::iterator		itservport;
+	std::map<int, int>::iterator	it_port;
+	std::vector<Server>::iterator	it_serv;
+	std::vector<int>::iterator		it_servport;
+	std::map<int, int>::iterator	tmp;
 	struct sockaddr_in				ssock;
 	int								port;
 	int								fdsock;
 	int								clfd;
 
-	itport = this->_sockets.begin();
-	while (itport != this->_sockets.end())
+	it_port = this->_sockets.begin();
+	while (it_port != this->_sockets.end())
 	{
-		port = (*itport).first;
-		fdsock = (*itport).second;
-		tmp = itport;
+		port = (*it_port).first;
+		fdsock = (*it_port).second;
 		if (FD_ISSET(fdsock, &this->_errset))
 		{
 			std::cerr << "[!] A critical error occured while listening on port " << port;
 			std::cerr << ". Closing the connection..." << "\n" << std::endl;
+			tmp = it_port;
 			close(fdsock);
-			itport--;
+			it_port--;
 			this->_sockets.erase(tmp);
-			itserv = this->_servs.begin();
-			while (itserv != this->_servs.end())
+			it_serv = this->_servs.begin();
+			while (it_serv != this->_servs.end())
 			{
-				servport = (*itserv).getPorts();
-				itservport = servport.begin();
-				while (itservport != servport.end())
+				servport = (*it_serv).getPorts();
+				it_servport = servport.begin();
+				while (it_servport != servport.end())
 				{
-					if (port == (*itservport))
-						itservport = servport.erase(itservport) - 1;
-					itservport++;
+					if (port == (*it_servport))
+						it_servport = servport.erase(it_servport) - 1;
+					it_servport++;
 				}
 				if (servport.empty())
 				{
-					std::cout << "[-] " << (*itserv).getName() << " doesn't have any port to listen to anymore. ";
+					std::cout << "[-] " << (*it_serv).getName() << " doesn't have any port to listen to anymore. ";
 					std::cout << "Closing the server..." << "\n" << std::endl;
-					itserv = this->_servs.erase(itserv) - 1;
+					it_serv = this->_servs.erase(it_serv) - 1;
 				}
 				if (this->_servs.empty())
 				{
@@ -186,16 +178,13 @@ void	Manager::managePorts(void)
 					std::cout << "Shutting down the program..." << "\n" << std::endl;
 					this->shutdown();
 				}
-				itserv++;
+				it_serv++;
 			}
 		}
 		else if (FD_ISSET(fdsock, &this->_rset))
 		{
 			ft_memset(ssock.sin_zero, 0, sizeof(ssock.sin_zero));
 			clfd = accept(fdsock, 0, 0);
-			// v A enlever ? v
-			// clfd = accept(fdsock, reinterpret_cast<struct sockaddr *>(&ssock), reinterpret_cast<socklen_t *>(sizeof(ssock)));
-			// ^ A enlever ? ^
 			if (clfd == -1)
 			{
 				std::cerr << "[!] Failed to accept a new client on port " << port << ":" << strerror(errno) << "\n" << std::endl;
@@ -205,8 +194,8 @@ void	Manager::managePorts(void)
 			{
 				std::cerr << "[!] Failed setting the fd of a new client on port " << port << " to non-bloquant";
 				std::cerr << ": " << strerror(errno) << ". Closing the connection...\n" << std::endl;
-				errno = 0;
 				close(clfd);
+				errno = 0;
 			}
 			try
 			{
@@ -220,7 +209,7 @@ void	Manager::managePorts(void)
 				close(clfd);
 			}
 		}
-		itport++;
+		it_port++;
 	}
 }
 
@@ -229,9 +218,6 @@ void	Manager::manageClients(void)
 	std::vector<Client>::iterator	it;
 	int								fd;
 	int								bytes;
-	std::string						status;
-	std::string						rdstatus;
-	std::vector<char>				response;
 
 	it = this->_clients.begin();
 	while (it != this->_clients.end())
@@ -263,7 +249,6 @@ void	Manager::manageClients(void)
 				if (!(*it).keepAlive())
 				{
 					close(fd);
-					std::cout << "Closed it\n";
 					it = this->_clients.erase(it) - 1;
 				}
 			}
@@ -281,31 +266,31 @@ void	Manager::manageClients(void)
 
 std::vector<Server>::iterator	Manager::searchServ(std::string name, int port)
 {
-	std::vector<Server>::iterator							servit;
 	std::vector<int>										ports;
-	std::vector<int>::iterator								portit;
 	std::vector<std::vector<Server>::iterator>				res;
-	std::vector<std::vector<Server>::iterator>::iterator	resit;
+	std::vector<Server>::iterator							it_serv;
+	std::vector<int>::iterator								it_port;
+	std::vector<std::vector<Server>::iterator>::iterator	it_res;
 
-	servit = this->_servs.begin();
-	while (servit != this->_servs.end())
+	it_serv = this->_servs.begin();
+	while (it_serv != this->_servs.end())
 	{
-		ports = (*servit).getPorts();
-		portit = ports.begin();
-		while (portit != ports.end())
+		ports = (*it_serv).getPorts();
+		it_port = ports.begin();
+		while (it_port != ports.end())
 		{
-			if ((*portit) == port)
-				res.push_back((servit));
-			portit++;
+			if ((*it_port) == port)
+				res.push_back((it_serv));
+			it_port++;
 		}
-		servit++;
+		it_serv++;
 	}
-	resit = res.begin();
-	while (resit != res.end())
+	it_res = res.begin();
+	while (it_res != res.end())
 	{
-		if ((*(*resit)).getName() == name)
-			return ((*resit));
-		resit++;
+		if ((*(*it_res)).getName() == name)
+			return ((*it_res));
+		it_res++;
 	}
 	return (*res.begin());
 }
@@ -313,7 +298,6 @@ std::vector<Server>::iterator	Manager::searchServ(std::string name, int port)
 void	Manager::manageTimeout(void)
 {
 	std::vector<Client>::iterator	it;
-	int								fd;
 
 	it = this->_clients.begin();
 	this->_timer = std::time(0);
@@ -321,10 +305,9 @@ void	Manager::manageTimeout(void)
 	{
 		if ((*it).getTimer() - this->_timer < -9)
 		{
-			fd = (*it).getFD();
-			std::cout << "[-] A client (fd " << fd << ") timed out. ";
+			std::cout << "[-] A client (fd " << (*it).getFD() << ") timed out. ";
 			std::cout << "Closing the connection...\n" << std::endl;
-			close(fd);
+			close((*it).getFD());
 			it = this->_clients.erase(it) - 1;
 		}
 		it++;

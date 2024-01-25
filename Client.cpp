@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:43:22 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/25 13:36:30 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/25 16:00:39 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,13 +15,12 @@
 
 //////////////////////////////
 // Constructors and Destructor
-Client::Client(Manager *main, int fd, int port) : _manager(main), _fd(fd), \
-	_port(port), _timer(std::time(0)), _toread(true), _inrequest(false), \
-	_keepalive(true), _request(new Request(*this)) { }
+Client::Client(Manager *main, int fd, int port) : _manager(main), _request(new Request(*this)), \
+	_fd(fd), _port(port), _timer(std::time(0)), _toread(true), _inrequest(false), _keepalive(true) { }
 
-Client::Client(Client const &rhs) : _manager(rhs._manager), _fd(rhs._fd), \
-	_port(rhs._port), _timer(rhs._timer), _toread(rhs._toread), \
-	_inrequest(rhs._inrequest), _keepalive(rhs._keepalive), _request(new Request(*this)) { }
+Client::Client(Client const &rhs) : _manager(rhs._manager), _request(new Request(*this)), \
+	_fd(rhs._fd), _port(rhs._port), _timer(rhs._timer), _toread(rhs._toread), \
+	_inrequest(rhs._inrequest), _keepalive(rhs._keepalive) { }
 
 Client::~Client(void)
 { delete this->_request; }
@@ -33,14 +32,14 @@ Client	&Client::operator=(Client &rhs)
 	if (this != &rhs)
 	{
 		this->_manager = rhs._manager;
+		delete this->_request;
+		this->_request = new Request(*this);
 		this->_fd = rhs._fd;
 		this->_port = rhs._port;
 		this->_timer = rhs._timer;
 		this->_toread = rhs._toread;
 		this->_inrequest = rhs._inrequest;
 		this->_keepalive = rhs._keepalive;
-		delete this->_request;
-		this->_request = new Request(*this);
 	}
 	return (*this);
 }

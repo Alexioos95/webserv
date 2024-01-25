@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:05:30 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/25 10:07:21 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/25 15:05:17 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,6 @@ int	main(int argc, char **argv)
 
 	try
 	{
-
 		if (argc != 2)
 		{
 			std::cerr << "Usage: ./webserv <\"config\".conf>" << std::endl;
@@ -36,17 +35,18 @@ int	main(int argc, char **argv)
 	}
 	catch (const std::exception &e)
 	{
-		int			ret = 0;
-		std::string res = e.what();
+		int			ret;
+		std::string res;
 
+		ret = 0;
+		res = e.what();
 		mng.shutdown();
 		if (!res.empty() && res != "std::exception")
 		{
 			std::cerr << "[!] Critical error in the program: " << e.what();
 			if (errno != 0)
 				std::cerr << strerror(errno);
-			std::cerr << ". All connection have been closed.";
-			std::cerr << std::endl;
+			std::cerr << ". All connection have been closed." << std::endl;
 			ret = 1;
 		}
 		std::cout << std::endl << "[!] The program has been closed.\n";

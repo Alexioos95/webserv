@@ -6,11 +6,10 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/25 13:27:03 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/25 16:02:15 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Manager.hpp"
 #include "Request.hpp"
 #include "Client.hpp"
 
@@ -40,66 +39,64 @@ int	Request::reader(void)
 	{
 		std::cout << "[*] Buffer of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n";
 		std::cout << this->_request << "\n" << std::endl;
+		return (bytes);
 	}
-	else
+	if (this->_header.find("\r\n\r\n") == std::string::npos)
 	{
-		if (this->_header.find("\r\n\r\n") == std::string::npos)
+		this->_header = this->_header + this->_request.substr(0, pos + 4);
+		this->_request.erase(0, pos + 4);
+		if (this->_header.find("\r\n\r\n") != std::string::npos)
 		{
-			this->_header = this->_header + this->_request.substr(0, pos + 4);
-			this->_request.erase(0, pos + 4);
-			if (this->_header.find("\r\n\r\n") != std::string::npos)
+			std::cout << "[*] Header of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n";
+			std::cout << this->_header.substr(0, this->_header.length() - 4) << "\n" << std::endl;
+			pos = this->_header.find("Content-Length: ");
+			if (pos == std::string::npos)
+				this->_client.setToRead(false);
+			else
 			{
-				std::cout << "[*] Header of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n";
-				std::cout << this->_header.substr(0, this->_header.length() - 4) << "\n" << std::endl;
-				pos = this->_header.find("Content-Length: ");
-				if (pos == std::string::npos)
-					this->_client.setToRead(false);
-				else
+				nb = this->_header.substr((pos + 16), (this->_header.find("\r\n", pos) - pos - 16));
+				this->_maxcontentlength = std::atoi(nb.c_str());
+				if (!this->_request.empty())
 				{
-					nb = this->_header.substr((pos + 16), (this->_header.find("\r\n", pos) - pos - 16));
-					this->_maxcontentlength = std::atoi(nb.c_str());
-					if (!this->_request.empty())
+					this->_body = this->_body + this->_request;
+					this->_contentlength = this->_contentlength + this->_request.length();
+					this->_request.erase(0, this->_request.length());
+					if (this->_contentlength > this->_maxcontentlength)
+						this->_body.resize(this->_maxcontentlength);
+					if (this->_contentlength >= this->_maxcontentlength || this->_body.find("\r\n\r\n") != std::string::npos)
 					{
-						this->_body = this->_body + this->_request;
-						this->_contentlength = this->_contentlength + this->_request.length();
-						this->_request.erase(0, this->_request.length());
-						if (this->_contentlength > this->_maxcontentlength)
-							this->_body.resize(this->_maxcontentlength);
-						if (this->_contentlength >= this->_maxcontentlength || this->_body.find("\r\n\r\n") != std::string::npos)
-						{
-							std::cout << "[*] Body of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n";
-							if (this->_body.find("\r\n\r\n") != std::string::npos)
-								std::cout << this->_body.substr(0, this->_body.length() - 4) << "\n" << std::endl;
-							else
-								std::cout << this->_body << "\n" << std::endl;
-							this->_client.setToRead(false);
-						}
+						std::cout << "[*] Body of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n";
+						if (this->_body.find("\r\n\r\n") != std::string::npos)
+							std::cout << this->_body.substr(0, this->_body.length() - 4) << "\n" << std::endl;
+						else
+							std::cout << this->_body << "\n" << std::endl;
+						this->_client.setToRead(false);
 					}
 				}
 			}
 		}
+	}
+	else
+	{
+		if (this->_request.find("\r\n\r\n") != std::string::npos)
+		{
+			this->_body = this->_body + this->_request.substr(0, pos + 4);
+			this->_request.erase(0, pos + 4);
+		}
 		else
 		{
-			if (this->_request.find("\r\n\r\n") != std::string::npos)
-			{
-				this->_body = this->_body + this->_request.substr(0, pos + 4);
-				this->_request.erase(0, pos + 4);
-			}
-			else
-			{
-				this->_body = this->_body + this->_request;
-				this->_request.erase(0, this->_request.length());
-			}
-			this->_contentlength = this->_contentlength + bytes;
-			if (this->_contentlength > this->_maxcontentlength)
-				this->_body.resize(this->_maxcontentlength);
-			if (this->_contentlength >= this->_maxcontentlength || this->_body.find("\r\n\r\n") != std::string::npos)
-			{
-				std::cout << "[*] Body of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n";
-				std::cout << this->_body << "\n" << std::endl;
-				this->_contentlength = 0;
-				this->_client.setToRead(false);
-			}
+			this->_body = this->_body + this->_request;
+			this->_request.erase(0, this->_request.length());
+		}
+		this->_contentlength = this->_contentlength + bytes;
+		if (this->_contentlength > this->_maxcontentlength)
+			this->_body.resize(this->_maxcontentlength);
+		if (this->_contentlength >= this->_maxcontentlength || this->_body.find("\r\n\r\n") != std::string::npos)
+		{
+			std::cout << "[*] Body of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n";
+			std::cout << this->_body << "\n" << std::endl;
+			this->_contentlength = 0;
+			this->_client.setToRead(false);
 		}
 	}
 	return (bytes);
@@ -208,7 +205,7 @@ std::string	Request::parse(void)
 	file = line.substr(pos, (line.find(' ', pos) - (pos)));
 	if (file.empty())
 		return ("400 Bad Request");
-	else if (file.length() > 0 && *file.begin() != '/')
+	else if (*(root.end() - 1) != '/' && *file.begin() != '/')
 		file = '/' + file;
 	this->_filepath = root + file;
 	pos = file.length() + 2;
@@ -361,7 +358,7 @@ void	Request::buildResponse(std::string status)
 		str = str + "Connection: keep-alive\r\n";
 	else
 		str = str + "Connection: closed\r\n";
-	std::cout << "[*] Response's header sent on " << this->_client.getPort();
+	std::cout << "[*] Response's header sent on port " << this->_client.getPort();
 	std::cout << " (fd " << this->_client.getFD() << ")\n" << str << std::endl;
 	str = str + "\r\n";
 	this->_response.insert(this->_response.begin(), str.begin(), str.end());
@@ -417,7 +414,7 @@ std::string	Request::getMime(void)
 	line = this->_filepath;
 	line.erase(0, line.find_last_of('.') + 1);
 	i = 0;
-	while (i < 67 && line.compare(type[i]))
+	while (i < 67 && line.compare(type[i]) != 0)
 		i++;
 	if (i < 67)
 		return (mime[i]);

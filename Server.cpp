@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:38:00 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/25 11:25:19 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/25 15:59:48 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,10 +66,13 @@ Server::~Server(void) { }
 // Overloads
 Server	&Server::operator=(Server const &rhs)
 {
-	this->_name = rhs._name;
-	this->_root = rhs._root;
-	this->_ports = rhs._ports;
-	this->_bodymax = rhs._bodymax;
+	if (this != &rhs)
+	{
+		this->_name = rhs._name;
+		this->_root = rhs._root;
+		this->_ports = rhs._ports;
+		this->_bodymax = rhs._bodymax;
+	}
 	return (*this);
 }
 
@@ -117,24 +120,24 @@ bool	Server::bindPort(std::map<int, int> &m, int port)
 	if (bind(fdsock, reinterpret_cast<struct sockaddr *>(&ssock), sizeof(ssock)) == -1)
 	{
 		std::cerr << "[!] Failed binding socket to port " << port << " for " << this->_name << ": " << strerror(errno) << std::endl;
-		errno = 0;
 		close(fdsock);
+		errno = 0;
 		return (false);
 	}
 	if (fcntl(fdsock, F_SETFL, O_NONBLOCK, FD_CLOEXEC) == -1)
 	{
 		std::cerr << "[!] Failed setting socket of port " << port << " for " << this->_name << " to non-bloquant";
 		std::cerr << ": " << strerror(errno) << std::endl;
-		errno = 0;
 		close(fdsock);
+		errno = 0;
 		return (false);
 	}
 	if (listen(fdsock, SOMAXCONN) == -1)
 	{
 		std::cerr << "[!] Failed to listen on port " << port << " for " << this->_name;
 		std::cerr << ": " << strerror(errno) << std::endl;
-		errno = 0;
 		close(fdsock);
+		errno = 0;
 		return (false);
 	}
 	m.insert(std::pair<int, int>(port, fdsock));
