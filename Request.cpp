@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/23 14:30:32 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/25 13:27:03 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,10 +36,10 @@ int	Request::reader(void)
 		return (bytes);
 	this->_request = this->_request + buffer;
 	pos = this->_request.find("\r\n\r\n");
-	if (pos == std::string::npos)
+	if (pos == std::string::npos && this->_contentlength + bytes < this->_maxcontentlength)
 	{
 		std::cout << "[*] Buffer of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n";
-		std::cout << this->_header << "\n" << std::endl;
+		std::cout << this->_request << "\n" << std::endl;
 	}
 	else
 	{
@@ -51,20 +51,45 @@ int	Request::reader(void)
 			{
 				std::cout << "[*] Header of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n";
 				std::cout << this->_header.substr(0, this->_header.length() - 4) << "\n" << std::endl;
-				pos = this->_request.find("Content-Length: ");
-				if (pos != std::string::npos)
-				{
-					nb = this->_request.substr(pos + 16, this->_request.find("\r\n", pos) - pos);
-					this->_maxcontentlength = std::atoi(nb.c_str());
-				}
-				else
+				pos = this->_header.find("Content-Length: ");
+				if (pos == std::string::npos)
 					this->_client.setToRead(false);
+				else
+				{
+					nb = this->_header.substr((pos + 16), (this->_header.find("\r\n", pos) - pos - 16));
+					this->_maxcontentlength = std::atoi(nb.c_str());
+					if (!this->_request.empty())
+					{
+						this->_body = this->_body + this->_request;
+						this->_contentlength = this->_contentlength + this->_request.length();
+						this->_request.erase(0, this->_request.length());
+						if (this->_contentlength > this->_maxcontentlength)
+							this->_body.resize(this->_maxcontentlength);
+						if (this->_contentlength >= this->_maxcontentlength || this->_body.find("\r\n\r\n") != std::string::npos)
+						{
+							std::cout << "[*] Body of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n";
+							if (this->_body.find("\r\n\r\n") != std::string::npos)
+								std::cout << this->_body.substr(0, this->_body.length() - 4) << "\n" << std::endl;
+							else
+								std::cout << this->_body << "\n" << std::endl;
+							this->_client.setToRead(false);
+						}
+					}
+				}
 			}
 		}
 		else
 		{
-			this->_body = this->_body + this->_request.substr(0, pos + 4);
-			this->_request.erase(0, pos + 4);
+			if (this->_request.find("\r\n\r\n") != std::string::npos)
+			{
+				this->_body = this->_body + this->_request.substr(0, pos + 4);
+				this->_request.erase(0, pos + 4);
+			}
+			else
+			{
+				this->_body = this->_body + this->_request;
+				this->_request.erase(0, this->_request.length());
+			}
 			this->_contentlength = this->_contentlength + bytes;
 			if (this->_contentlength > this->_maxcontentlength)
 				this->_body.resize(this->_maxcontentlength);
@@ -94,6 +119,7 @@ int	Request::writer(void)
 				this->_status = this->del();
 			if (this->_method == "POST")
 				this->_status = this->create();
+			errno = 0;
 		}
 		this->_inparse = false;
 		this->_inprocess = true;
@@ -106,13 +132,13 @@ int	Request::writer(void)
 				this->_status = this->get();
 			else if (this->_method == "POST")
 				this->_status = this->post();
-			if (this->_status == "200 OK" || this->_status == "202 Created")
-			{
-				this->_inprocess = false;
-				this->_inbuild = true;
-			}
 		}
-		if (this->_status != "102 Processing" && this->_status != "200 OK" && this->_status != "202 Created")
+		if (this->_status == "200 OK" || this->_status == "202 Created")
+		{
+			this->_inprocess = false;
+			this->_inbuild = true;
+		}
+		else if (this->_status != "102 Processing")
 		{
 			// Handle error read;
 		}
@@ -129,17 +155,16 @@ int	Request::writer(void)
 		std::vector<char>::iterator	it;
 
 		len = this->_response.size();
-		if (len > 2048)
-			len = 2048;
+		if (len > 4096)
+			len = 4096;
 		it = this->_response.begin() + len;
 		if (send(this->_client.getFD(), this->_response.data(), len, 0) <= 0)
-			return (0);
+			return (-1);
 		this->_response.erase(this->_response.begin(), it);
 		if (this->_response.empty())
 		{
-			this->_inwrite = false;
-			this->_client.setInRequest(false);
 			this->clear();
+			return (0);
 		}
 	}
 	return (1);
@@ -196,7 +221,7 @@ std::string	Request::parse(void)
 		if (this->_method == "DELETE")
 			return ("400 Bad Request");
 		length = this->_header.substr((pos + 16), (this->_header.find("\r\n", pos) - 16));
-		if ((*it).getBodyMax() < std::atoi(length.c_str()))
+		if ((*it).getBodymax() < std::atoi(length.c_str()))
 			return ("413 Request Entity Too Large");
 	}
 	else if (this->_method == "POST")
@@ -210,7 +235,6 @@ std::string	Request::parse(void)
 
 std::string	Request::openf(void)
 {
-	errno = 0;
 	this->_file = open(this->_filepath.c_str(), O_RDONLY);
 	if (errno)
 	{
@@ -237,8 +261,8 @@ std::string	Request::openf(void)
 std::string	Request::del(void)
 {
 	std::string	dir;
-
 	const char	*str;
+
 	str = this->_filepath.c_str();
 	dir = this->_filepath.substr(0, this->_filepath.find_last_of("/") + 1);
 	if (access(str, F_OK) == -1)
@@ -274,10 +298,10 @@ std::string	Request::create(void)
 
 std::string	Request::get(void)
 {
-	char			buffer[2048];
+	char			buffer[4096];
 	ssize_t			bytes;
 
-	bytes = read(this->_file, buffer, 2048);
+	bytes = read(this->_file, buffer, 4096);
 	if (bytes < 0)
 	{
 		this->_bodyresponse.erase(this->_bodyresponse.begin(), this->_bodyresponse.end());
@@ -287,7 +311,7 @@ std::string	Request::get(void)
 	this->_bodyresponse.insert(this->_bodyresponse.end(), &buffer[0], &buffer[bytes]);
 	this->_contentlength = this->_contentlength + bytes;
 	this->_client.setInRequest(true);
-	if (bytes < 2048)
+	if (bytes < 4096)
 	{
 		close(this->_file);
 		return ("200 OK");
@@ -303,8 +327,8 @@ std::string	Request::post(void)
 
 	len = this->_body.length();
 	i = len;
-	if (i > 2048)
-		i = 2048;
+	if (i > 4096)
+		i = 4096;
 	bytes = write(this->_file, this->_body.c_str(), i);
 	if (bytes <= 0)
 	{
@@ -314,7 +338,7 @@ std::string	Request::post(void)
 	if (i == len)
 	{
 		close(this->_file);
-		return ("200 OK");
+		return ("202 Created");
 	}
 	return ("102 Processing");
 }
@@ -341,8 +365,13 @@ void	Request::buildResponse(std::string status)
 	std::cout << " (fd " << this->_client.getFD() << ")\n" << str << std::endl;
 	str = str + "\r\n";
 	this->_response.insert(this->_response.begin(), str.begin(), str.end());
-	this->_response.insert(this->_response.end(), this->_bodyresponse.begin(), this->_bodyresponse.end());
-	str = "\r\n\r\n";
+	if (!this->_bodyresponse.empty())
+	{
+		this->_response.insert(this->_response.end(), this->_bodyresponse.begin(), this->_bodyresponse.end());
+		str = "\r\n";
+		this->_response.insert(this->_response.end(), str.begin(), str.end());
+	}
+	str = "\r\n";
 	this->_response.insert(this->_response.end(), str.begin(), str.end());
 }
 

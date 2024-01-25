@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:38:00 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/23 14:24:41 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/25 11:25:19 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,9 +57,10 @@ Server::Server(Server const &rhs)
 	this->_name = rhs._name;
 	this->_root = rhs._root;
 	this->_ports = rhs._ports;
+	this->_bodymax = rhs._bodymax;
 }
 
-Server::~Server(void) {}
+Server::~Server(void) { }
 
 //////////////////////////////
 // Overloads
@@ -68,6 +69,7 @@ Server	&Server::operator=(Server const &rhs)
 	this->_name = rhs._name;
 	this->_root = rhs._root;
 	this->_ports = rhs._ports;
+	this->_bodymax = rhs._bodymax;
 	return (*this);
 }
 
@@ -82,7 +84,7 @@ std::string	Server::getRoot(void) const
 std::vector<int>	&Server::getPorts(void)
 { return (this->_ports); }
 
-int	Server::getBodyMax(void) const
+int	Server::getBodymax(void) const
 { return (this->_bodymax); }
 
 //////////////////////////////
@@ -103,8 +105,9 @@ bool	Server::bindPort(std::map<int, int> &m, int port)
 	fdsock = socket(AF_INET, SOCK_STREAM, 0);
 	if (fdsock == -1)
 	{
-		std::cerr << "[!] Failed creating socket for " << port << " for " << this->_name;
+		std::cerr << "[!] Failed creating socket for port " << port << " for " << this->_name;
 		std::cerr << ": " << strerror(errno) << std::endl;
+		errno = 0;
 		return (false);
 	}
 	ft_memset(ssock.sin_zero, 0, sizeof(ssock.sin_zero));
@@ -114,6 +117,7 @@ bool	Server::bindPort(std::map<int, int> &m, int port)
 	if (bind(fdsock, reinterpret_cast<struct sockaddr *>(&ssock), sizeof(ssock)) == -1)
 	{
 		std::cerr << "[!] Failed binding socket to port " << port << " for " << this->_name << ": " << strerror(errno) << std::endl;
+		errno = 0;
 		close(fdsock);
 		return (false);
 	}
@@ -121,6 +125,7 @@ bool	Server::bindPort(std::map<int, int> &m, int port)
 	{
 		std::cerr << "[!] Failed setting socket of port " << port << " for " << this->_name << " to non-bloquant";
 		std::cerr << ": " << strerror(errno) << std::endl;
+		errno = 0;
 		close(fdsock);
 		return (false);
 	}
@@ -128,6 +133,7 @@ bool	Server::bindPort(std::map<int, int> &m, int port)
 	{
 		std::cerr << "[!] Failed to listen on port " << port << " for " << this->_name;
 		std::cerr << ": " << strerror(errno) << std::endl;
+		errno = 0;
 		close(fdsock);
 		return (false);
 	}

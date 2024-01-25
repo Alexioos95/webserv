@@ -35,7 +35,6 @@
 extern bool g_sigint;
 
 class Client;
-class PortSocket;
 class Server;
 
 class Manager
@@ -45,24 +44,21 @@ class Manager
 		Manager(void);
 		~Manager(void);
 	// Exceptions
-		class SigintException : public std::exception
-			{ };
+		class SigintException : public std::exception { };
 		class SelectException : public std::exception
 			{ public: const char				*what(void) const throw(); };
 	// Getters
 		std::map<int, int>						&getSockets(void);
 	// Functions
 		void									run(void);
+		void									shutdown(void);
 		std::vector<Server>::iterator			searchServ(std::string name, int port);
 
 	private:
 	// Functions
-		void									shutdown(void);
 		void									manageFDSets(void);
 		void									managePorts(void);
 		void									manageClients(void);
-		std::string								parseRequest(Client &cl);
-		std::vector<char>						buildResponse(Client &cl, std::string status);
 		void									manageTimeout(void);
 	// Attributes
 		time_t									_timer;

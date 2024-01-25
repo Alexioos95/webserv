@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/12 12:00:43 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/22 14:11:55 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/25 08:56:53 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,9 +18,9 @@
 # include <errno.h>			// errno
 # include <fcntl.h>			// fcntl
 # include <cstring>			// strerror, close
-# include <iostream>		// cout, string
+# include <iostream>		// cout
 # include <unistd.h>		// close
-# include <netinet/in.h>	// socket functions
+# include <netinet/in.h>	// sockets
 
 class Server
 {
@@ -30,15 +30,14 @@ class Server
 		Server(Server const &rhs);
 		~Server(void);
 	// Exceptions
-		class CreationException : public std::exception
-			{  };
+		class CreationException : public std::exception { };
 	// Overloads
 		Server				&operator=(Server const &rhs);
 	// Getters
 		std::string			getName(void) const;
 		std::string			getRoot(void) const;
 		std::vector<int>	&getPorts(void);
-		int					getBodyMax(void) const;
+		int					getBodymax(void) const;
 
 	private:
 	// Functions

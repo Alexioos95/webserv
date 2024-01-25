@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:05:30 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/12 15:09:43 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/25 10:07:21 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,9 +16,10 @@ int	main(int argc, char **argv)
 {
 	static_cast<void>(argv);
 	// ^ A enlever ^
+	Manager	mng;
+
 	try
 	{
-		Manager	mng;
 
 		if (argc != 2)
 		{
@@ -31,29 +32,29 @@ int	main(int argc, char **argv)
 			std::cerr << "[!] Critical error in the program: signal: " << strerror(errno) << std::endl;
 			return (1);
 		}
-		// <- parsing config here. Note: Si la root du serveur contient des / a la fin, enleve les stp.
 		mng.run();
 	}
 	catch (const std::exception &e)
 	{
+		int			ret = 0;
 		std::string res = e.what();
-		if (res.empty() || res == "std::exception")
-		{
-			std::cout << std::endl << "[!] The program has been closed.\n";
-			std::cout << "  _ _____ _ _     __  _ _____   _______   _____ _ __ __ ___ _ \n";
-			std::cout << " `.\\_   _| | |   |  \\| | __\\ \\_/ /_   _| |_   _| |  V  | __/ \\\n";
-			std::cout << "     | | | | |_  | | ' | _| > , <  | |     | | | | \\_/ | _|\\_/\n";
-			std::cout << "     |_| |_|___| |_|\\__|___/_/ \\_\\ |_|     |_| |_|_| |_|___(_)\n" << std::endl;
-			return (0);
-		}
-		else
+
+		mng.shutdown();
+		if (!res.empty() && res != "std::exception")
 		{
 			std::cerr << "[!] Critical error in the program: " << e.what();
 			if (errno != 0)
 				std::cerr << strerror(errno);
+			std::cerr << ". All connection have been closed.";
 			std::cerr << std::endl;
-			return (1);
+			ret = 1;
 		}
+		std::cout << std::endl << "[!] The program has been closed.\n";
+		std::cout << "  _ _____ _ _     __  _ _____   _______   _____ _ __ __ ___ _ \n";
+		std::cout << " `.\\_   _| | |   |  \\| | __\\ \\_/ /_   _| |_   _| |  V  | __/ \\\n";
+		std::cout << "     | | | | |_  | | ' | _| > , <  | |     | | | | \\_/ | _|\\_/\n";
+		std::cout << "     |_| |_|___| |_|\\__|___/_/ \\_\\ |_|     |_| |_|_| |_|___(_)\n" << std::endl;
+		return (ret);
 	}
 	return (0);
 }

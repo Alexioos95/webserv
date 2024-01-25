@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:41:38 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/23 14:32:23 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/25 13:36:35 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,7 +48,6 @@ class Client
 		void				actualizeTime(void);
 		int					readRequest(void);
 		int					writeResponse(void);
-		void				del(void);
 
 	private:
 	// Attributes

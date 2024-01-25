@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:43:22 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/23 14:59:34 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/25 13:36:30 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,6 +89,3 @@ int	Client::readRequest(void)
 
 int	Client::writeResponse(void)
 { return (this->_request->writer()); }
-
-void	Client::del(void)
-{ delete this->_request; }

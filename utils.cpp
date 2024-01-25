@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/04 14:35:24 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/22 14:59:36 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/25 10:07:39 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,15 @@
 #include "Client.hpp"
 
 bool g_sigint = false;
+
+void	sigint_handler(int sig)
+{
+	static_cast<void>(sig);
+	g_sigint = true;
+}
+
+void		sigquit_handler(int sig)
+{ static_cast<void>(sig); }
 
 void	*ft_memset(void *s, int c, size_t n)
 {
@@ -29,15 +38,6 @@ void	*ft_memset(void *s, int c, size_t n)
 	}
 	return (s);
 }
-
-void	sigint_handler(int sig)
-{
-	static_cast<void>(sig);
-	g_sigint = true;
-}
-
-void		sigquit_handler(int sig)
-{ static_cast<void>(sig); }
 
 std::string	itoa(int nbi)
 {

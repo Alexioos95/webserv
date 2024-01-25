@@ -6,14 +6,14 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/23 14:29:38 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/25 08:57:06 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
 
-# include <ctime>			// time functions
+# include <ctime>			// functions time
 # include <vector>			// vector
 # include <cstdlib>			// atoi
 # include <iostream>		// cout

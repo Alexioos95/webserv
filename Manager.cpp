@@ -49,6 +49,10 @@ void	Manager::run(void)
 	vec.push_back(8080);
 	vec.push_back(8081);
 	vec.push_back(8082);
+	vec.push_back(8083);
+	vec.push_back(8084);
+	vec.push_back(8085);
+	vec.push_back(8086);
 	std::vector<int>	vec2;
 	vec2.push_back(8090);
 	vec2.push_back(8091);
@@ -62,13 +66,17 @@ void	Manager::run(void)
 
 	while (1)
 	{
+		struct timeval t;
+
+		t.tv_sec = 1;
+		t.tv_usec = 0;
 		if (g_sigint == true)
 		{
 			this->shutdown();
 			throw (SigintException());
 		}
 		this->manageFDSets();
-		if (select(FD_SETSIZE, &this->_rset, &this->_wset, &this->_errset, NULL) == -1)
+		if (select(FD_SETSIZE, &this->_rset, &this->_wset, &this->_errset, &t) == -1)
 		{
 			std::cerr << "\n[!] Critical error on select: " << strerror(errno) << ". Shutting down the program..." << std::endl;
 			this->shutdown();
@@ -189,16 +197,28 @@ void	Manager::managePorts(void)
 			// clfd = accept(fdsock, reinterpret_cast<struct sockaddr *>(&ssock), reinterpret_cast<socklen_t *>(sizeof(ssock)));
 			// ^ A enlever ? ^
 			if (clfd == -1)
+			{
 				std::cerr << "[!] Failed to accept a new client on port " << port << ":" << strerror(errno) << "\n" << std::endl;
+				errno = 0;
+			}
 			if (fcntl(clfd, F_SETFL, O_NONBLOCK, FD_CLOEXEC) == -1)
 			{
 				std::cerr << "[!] Failed setting the fd of a new client on port " << port << " to non-bloquant";
 				std::cerr << ": " << strerror(errno) << ". Closing the connection...\n" << std::endl;
+				errno = 0;
 				close(clfd);
 			}
-			Client	cl(this, clfd, port);
-			this->_clients.push_back(cl);
-			std::cout << "[+] Accepted new client on port " << port << ". Gave him fd " << clfd << "\n" << std::endl;
+			try
+			{
+				Client	cl(this, clfd, port);
+				this->_clients.push_back(cl);
+				std::cout << "[+] Accepted new client on port " << port << ". Gave him fd " << clfd << "\n" << std::endl;
+			}
+			catch (const std::exception& e)
+			{
+				std::cerr << "[!] Failed creating new client on port " << port << ": " << e.what() << '\n' << std::endl;
+				close(clfd);
+			}
 		}
 		itport++;
 	}
@@ -243,6 +263,7 @@ void	Manager::manageClients(void)
 				if (!(*it).keepAlive())
 				{
 					close(fd);
+					std::cout << "Closed it\n";
 					it = this->_clients.erase(it) - 1;
 				}
 			}
@@ -301,7 +322,7 @@ void	Manager::manageTimeout(void)
 		if ((*it).getTimer() - this->_timer < -9)
 		{
 			fd = (*it).getFD();
-			std::cout << "[-] A client (fd " << fd << ") did not send any request in the allowed time. ";
+			std::cout << "[-] A client (fd " << fd << ") timed out. ";
 			std::cout << "Closing the connection...\n" << std::endl;
 			close(fd);
 			it = this->_clients.erase(it) - 1;
