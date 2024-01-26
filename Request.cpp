@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/26 12:08:12 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/26 13:12:18 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,6 @@ int	Request::reader(void)
 	char		buffer[2048 + 1];
 	int			bytes;
 	size_t		pos;
-	std::string	nb;
 
 	ft_memset(buffer, 0, 2048 + 1);
 	bytes = recv(this->_client.getFD(), buffer, 2048, 0);
@@ -42,63 +41,9 @@ int	Request::reader(void)
 		return (bytes);
 	}
 	if (this->_header.find("\r\n\r\n") == std::string::npos)
-	{
-		this->_header = this->_header + this->_request.substr(0, pos + 4);
-		this->_request.erase(0, pos + 4);
-		if (this->_header.find("\r\n\r\n") != std::string::npos)
-		{
-			std::cout << "[*] Header of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n";
-			std::cout << this->_header.substr(0, this->_header.length() - 4) << "\n" << std::endl;
-			pos = this->_header.find("Content-Length: ");
-			if (pos == std::string::npos)
-				this->_client.setToRead(false);
-			else
-			{
-				nb = this->_header.substr((pos + 16), (this->_header.find("\r\n", pos) - pos - 16));
-				this->_maxcontentlength = std::atoi(nb.c_str());
-				if (!this->_request.empty())
-				{
-					this->_body = this->_body + this->_request;
-					this->_contentlength = this->_contentlength + this->_request.length();
-					this->_request.erase(0, this->_request.length());
-					if (this->_contentlength > this->_maxcontentlength)
-						this->_body.resize(this->_maxcontentlength);
-					if (this->_contentlength >= this->_maxcontentlength || this->_body.find("\r\n\r\n") != std::string::npos)
-					{
-						std::cout << "[*] Body of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n";
-						if (this->_body.find("\r\n\r\n") != std::string::npos)
-							std::cout << this->_body.substr(0, this->_body.length() - 4) << "\n" << std::endl;
-						else
-							std::cout << this->_body << "\n" << std::endl;
-						this->_client.setToRead(false);
-					}
-				}
-			}
-		}
-	}
+		this->fillHeader(pos, bytes);
 	else
-	{
-		if (this->_request.find("\r\n\r\n") != std::string::npos)
-		{
-			this->_body = this->_body + this->_request.substr(0, pos + 4);
-			this->_request.erase(0, pos + 4);
-		}
-		else
-		{
-			this->_body = this->_body + this->_request;
-			this->_request.erase(0, this->_request.length());
-		}
-		this->_contentlength = this->_contentlength + bytes;
-		if (this->_contentlength > this->_maxcontentlength)
-			this->_body.resize(this->_maxcontentlength);
-		if (this->_contentlength >= this->_maxcontentlength || this->_body.find("\r\n\r\n") != std::string::npos)
-		{
-			std::cout << "[*] Body of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n";
-			std::cout << this->_body << "\n" << std::endl;
-			this->_contentlength = 0;
-			this->_client.setToRead(false);
-		}
-	}
+		this->fillBody(pos, bytes);
 	return (bytes);
 }
 
@@ -175,14 +120,60 @@ int	Request::writer(void)
 }
 
 //////////////////////////////
-// Functions: private
+// Functions: private - reader
+void	Request::fillHeader(size_t pos, int bytes)
+{
+	std::string	nb;
+
+	this->_header = this->_header + this->_request.substr(0, pos + 4);
+	this->_request.erase(0, pos + 4);
+	std::cout << "[*] Header of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n";
+	std::cout << this->_header.substr(0, this->_header.length() - 4) << "\n" << std::endl;
+	pos = this->_header.find("Content-Length: ");
+	if (pos == std::string::npos)
+	{
+		this->_client.setToRead(false);
+		return ;
+	}
+	nb = this->_header.substr((pos + 16), (this->_header.find("\r\n", pos) - pos - 16));
+	this->_maxcontentlength = std::atoi(nb.c_str());
+	if (!this->_request.empty())
+	{
+		pos = this->_request.find("\r\n\r\n");
+		this->fillBody(pos, bytes);
+	}
+}
+
+void	Request::fillBody(size_t pos, int bytes)
+{
+	if (this->_request.find("\r\n\r\n") != std::string::npos)
+	{
+		this->_body = this->_body + this->_request.substr(0, pos + 4);
+		this->_request.erase(0, pos + 4);
+	}
+	else
+	{
+		this->_body = this->_body + this->_request;
+		this->_request.erase(0, this->_request.length());
+	}
+	this->_contentlength = this->_contentlength + bytes;
+	if (this->_contentlength > this->_maxcontentlength)
+		this->_body.resize(this->_maxcontentlength);
+	if (this->_contentlength >= this->_maxcontentlength || this->_body.find("\r\n\r\n") != std::string::npos)
+	{
+		std::cout << "[*] Body of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n";
+		std::cout << this->_body << "\n" << std::endl;
+		this->_contentlength = 0;
+		this->_client.setToRead(false);
+	}
+}
+
+//////////////////////////////
+// Functions: private - writer
 std::string	Request::parse(void)
 {
 	size_t							pos;
 	std::string						line;
-	std::string						host;
-	std::string						port;
-	std::vector<Server>::iterator	it;
 	std::string						root;
 	std::string						version;
 	std::string						length;
@@ -190,24 +181,13 @@ std::string	Request::parse(void)
 	line = this->_header.substr(0, this->_header.find("\r\n"));
 	if (line.empty())
 		return ("400 Bad Request");
-	pos = this->_header.find("Host: ");
-	if (pos == std::string::npos)
+	if (!this->searchServ())
 		return ("400 Bad Request");
-	host = this->_header.substr(pos + 6, this->_header.find("\r\n", pos));
-	if (host.empty())
-		return ("400 Bad Request");
-	this->_name = host.substr(0, host.find(':'));
-	port = host.substr(this->_name.length() + 1, host.find("\r\n") - this->_name.length());
-	if (this->_name.empty() || port.empty())
-		return ("400 Bad Request");
-	this->_serv = this->_client.getManager()->getServ(this->_name, std::atoi(port.c_str()));
 	root = this->_serv.getRoot();
 	this->_method = line.substr(0, line.find(' '));
 	if (this->_method != "GET" && this->_method != "POST" && this->_method != "DELETE")
 		return ("405 Method Not Allowed");
 	pos = this->_method.length() + 1;
-	if (pos == std::string::npos)
-		return ("400 Bad Request");
 	this->_filename = line.substr(pos, (line.find(' ', pos) - (pos)));
 	if (this->_filename.empty())
 		return ("400 Bad Request");
@@ -222,7 +202,7 @@ std::string	Request::parse(void)
 		if (this->_method == "DELETE")
 			return ("400 Bad Request");
 		length = this->_header.substr((pos + 16), (this->_header.find("\r\n", pos) - 16));
-		if ((*it).getBodymax() < std::atoi(length.c_str()))
+		if (this->_serv.getBodymax() < std::atoi(length.c_str()))
 			return ("413 Request Entity Too Large");
 	}
 	else if (this->_method == "POST")
@@ -232,6 +212,28 @@ std::string	Request::parse(void)
 	else
 		this->_client.setKeepAlive(true);
 	return ("102 Processing");
+}
+
+bool	Request::searchServ()
+{
+	size_t							pos;
+	std::string						host;
+	std::string						port;
+
+	pos = this->_header.find("Host: ");
+	if (pos == std::string::npos)
+		return (false);
+	host = this->_header.substr(pos + 6, this->_header.find("\r\n", pos));
+	if (host.empty())
+		return (false);
+	this->_name = host.substr(0, host.find(':'));
+	if (this->_name.empty())
+		return (false);
+	port = host.substr(this->_name.length() + 1, host.find("\r\n") - this->_name.length());
+	if (port.empty())
+		return (false);
+	this->_serv = this->_client.getManager()->getServ(this->_name, std::atoi(port.c_str()));
+	return (true);
 }
 
 std::string	Request::openf(void)
@@ -376,11 +378,12 @@ std::string	Request::error()
 			r = r + "<!DOCTYPE html>\n<html style=\"height:100%;\" lang=\"en\">\n\t<head>\n\t\t<meta charset=\"UTF-8\">\n\t\t";
 			r = r + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\t\t";
 			r = r + "<meta http-equiv=\"X-UA-Compatible\" content=\"ie=edge\">\n\t\t";
-			r = r + "<title>" + this->_status + "</title>\n\t</head>\n";
+			r = r + "<title>" + this->_status.substr(0, 3) + "</title>\n\t</head>\n";
 			r = r + "\t<body style=\"height:100\%;display:flex;align-items: center;justify-content: center;\">\n\t\t";
-			r = r + "<main>\n\t\t\t\t<h1 style=\"font-size: 5em;\">" + this->_status + "</h1>\n\t\t</main>\n\t</body>\n</html>";
-
+			r = r + "<main>\n\t\t\t\t<h1 style=\"font-size: 5em;\">" + this->_status.substr(0, 3) + "</h1>\n\t\t</main>\n\t</body>\n</html>";
 			this->_bodyresponse.insert(this->_bodyresponse.end(), r.begin(), r.end());
+			this->_stat.st_mtime = std::time(0);
+			this->_contentlength = this->_bodyresponse.size();
 			return (this->_status);
 		}
 	}
@@ -394,11 +397,15 @@ void	Request::buildResponse(void)
 	str = "HTTP/1.1 " + this->_status + "\r\n";
 	str = str + "Date: " + this->getTime(std::time(0)) + "\r\n";
 	str = str + "Server: Webserv-42 (Linux)\r\n";
-	if (this->_method == "GET" && this->_status == "200 OK")
+	if ((this->_method == "GET" && this->_status == "200 OK") \
+		|| (this->_status != "200 OK" && this->_status != "202 Created"))
 	{
 		str = str + "Last-Modified: " + getTime(this->_stat.st_mtime) + "\r\n";
 		str = str + "Content-Length: " + itoa(this->_contentlength) + "\r\n";
-		str = str + "Content-Type: " + this->getMime() + "\r\n";
+		if (this->_status == "200 OK")
+			str = str + "Content-Type: " + this->getMime() + "\r\n";
+		else
+			str = str + "Content-Type: text/html\r\n";
 	}
 	str = str + "Cache-Control: no-cache, no-store, must-revalidate\r\n";
 	if (this->_client.keepAlive())

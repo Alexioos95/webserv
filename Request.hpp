@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/26 11:54:30 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/26 12:42:09 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,7 +64,11 @@ class Request
 		int									_contentlength;
 		int									_maxcontentlength;
 	// Functions
+		// Parsing
 		std::string							parse(void);
+		void								fillHeader(size_t pos, int bytes);
+		void								fillBody(size_t pos, int bytes);
+		bool								searchServ(void);
 		// Methods
 		std::string							openf(void);
 		std::string							create(void);
