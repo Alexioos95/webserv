@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/25 16:02:15 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/26 12:08:12 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,8 +15,8 @@
 
 //////////////////////////////
 // Constructors and Destructor
-Request::Request(Client &cl) : _file(-1), _contentlength(0), _maxcontentlength(0), \
-	_client(cl), _inparse(true), _inprocess(false), _inbuild(false), _inwrite(false) { }
+Request::Request(Client &cl) : _client(cl), _inparse(true), _inprocess(false), \
+	_inerror(true), _inbuild(false), _inwrite(false), _fdfile(-1), _contentlength(0), _maxcontentlength(0) { }
 
 Request::~Request(void) { }
 
@@ -137,12 +137,19 @@ int	Request::writer(void)
 		}
 		else if (this->_status != "102 Processing")
 		{
-			// Handle error read;
+			std::string tmp;
+
+			tmp = this->error();
+			if (tmp != "102 Processing")
+			{
+				this->_inprocess = false;
+				this->_inbuild = true;
+			}
 		}
 	}
 	if (this->_inbuild)
 	{
-		this->buildResponse(this->_status);
+		this->buildResponse();
 		this->_inbuild = false;
 		this->_inwrite = true;
 	}
@@ -177,7 +184,6 @@ std::string	Request::parse(void)
 	std::string						port;
 	std::vector<Server>::iterator	it;
 	std::string						root;
-	std::string						file;
 	std::string						version;
 	std::string						length;
 
@@ -194,21 +200,19 @@ std::string	Request::parse(void)
 	port = host.substr(this->_name.length() + 1, host.find("\r\n") - this->_name.length());
 	if (this->_name.empty() || port.empty())
 		return ("400 Bad Request");
-	it = this->_client.getManager()->searchServ(this->_name, std::atoi(port.c_str()));
-	root = (*it).getRoot();
+	this->_serv = this->_client.getManager()->getServ(this->_name, std::atoi(port.c_str()));
+	root = this->_serv.getRoot();
 	this->_method = line.substr(0, line.find(' '));
 	if (this->_method != "GET" && this->_method != "POST" && this->_method != "DELETE")
 		return ("405 Method Not Allowed");
 	pos = this->_method.length() + 1;
 	if (pos == std::string::npos)
 		return ("400 Bad Request");
-	file = line.substr(pos, (line.find(' ', pos) - (pos)));
-	if (file.empty())
+	this->_filename = line.substr(pos, (line.find(' ', pos) - (pos)));
+	if (this->_filename.empty())
 		return ("400 Bad Request");
-	else if (*(root.end() - 1) != '/' && *file.begin() != '/')
-		file = '/' + file;
-	this->_filepath = root + file;
-	pos = file.length() + 2;
+	this->_filepath = "Servers/" + root + '/' + this->_filename;
+	pos = this->_filename.length() + 2;
 	version = line.substr((this->_method.length() + pos), (line.find("\r\n") - (this->_method.length() + pos + 1)));
 	if (version != "HTTP/1.1")
 		return ("505 HTTP Version not supported");
@@ -232,7 +236,7 @@ std::string	Request::parse(void)
 
 std::string	Request::openf(void)
 {
-	this->_file = open(this->_filepath.c_str(), O_RDONLY);
+	this->_fdfile = open(this->_filepath.c_str(), O_RDONLY);
 	if (errno)
 	{
 		if (errno == ELOOP)
@@ -276,7 +280,7 @@ std::string	Request::create(void)
 	if (access(this->_filepath.c_str(), F_OK) != -1)
 		return ("409 Conflict");
 	errno = 0;
-	this->_file = open(this->_filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC);
+	this->_fdfile = open(this->_filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC);
 	if (errno)
 	{
 		if (errno == ELOOP)
@@ -298,11 +302,11 @@ std::string	Request::get(void)
 	char			buffer[4096];
 	ssize_t			bytes;
 
-	bytes = read(this->_file, buffer, 4096);
+	bytes = read(this->_fdfile, buffer, 4096);
 	if (bytes < 0)
 	{
 		this->_bodyresponse.erase(this->_bodyresponse.begin(), this->_bodyresponse.end());
-		close(this->_file);
+		close(this->_fdfile);
 		return ("500 Internal Server Error");
 	}
 	this->_bodyresponse.insert(this->_bodyresponse.end(), &buffer[0], &buffer[bytes]);
@@ -310,7 +314,7 @@ std::string	Request::get(void)
 	this->_client.setInRequest(true);
 	if (bytes < 4096)
 	{
-		close(this->_file);
+		close(this->_fdfile);
 		return ("200 OK");
 	}
 	return ("102 Processing");
@@ -326,28 +330,71 @@ std::string	Request::post(void)
 	i = len;
 	if (i > 4096)
 		i = 4096;
-	bytes = write(this->_file, this->_body.c_str(), i);
+	bytes = write(this->_fdfile, this->_body.c_str(), i);
 	if (bytes <= 0)
 	{
-		close(this->_file);
+		close(this->_fdfile);
 		return ("500 Internal Server Error");
 	}
 	if (i == len)
 	{
-		close(this->_file);
+		close(this->_fdfile);
 		return ("202 Created");
 	}
 	return ("102 Processing");
 }
 
-void	Request::buildResponse(std::string status)
+std::string	Request::error()
+{
+	if (this->_inerror)
+	{
+		std::map<std::string, std::string>				m;
+		std::map<std::string, std::string>::iterator	it;
+		std::string										root;
+		std::string										error;
+
+		this->_inerror = false;
+		m = this->_serv.getErrors();
+		it = m.begin();
+		error = this->_status.substr(0, 3);
+		while (it != m.end())
+		{
+			if ((*it).first == error)
+			{
+				root = this->_serv.getRoot();
+				this->_filepath = "Servers/" + root + '/' + (*it).second;
+				if (this->openf() != "102 Processing")
+					it = m.end();
+				break ;
+			}
+			it++;
+		}
+		if (it == m.end())
+		{
+			std::string	r;
+
+			r = r + "<!DOCTYPE html>\n<html style=\"height:100%;\" lang=\"en\">\n\t<head>\n\t\t<meta charset=\"UTF-8\">\n\t\t";
+			r = r + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\t\t";
+			r = r + "<meta http-equiv=\"X-UA-Compatible\" content=\"ie=edge\">\n\t\t";
+			r = r + "<title>" + this->_status + "</title>\n\t</head>\n";
+			r = r + "\t<body style=\"height:100\%;display:flex;align-items: center;justify-content: center;\">\n\t\t";
+			r = r + "<main>\n\t\t\t\t<h1 style=\"font-size: 5em;\">" + this->_status + "</h1>\n\t\t</main>\n\t</body>\n</html>";
+
+			this->_bodyresponse.insert(this->_bodyresponse.end(), r.begin(), r.end());
+			return (this->_status);
+		}
+	}
+	return (this->get());
+}
+
+void	Request::buildResponse(void)
 {
 	std::string			str;
 
-	str = "HTTP/1.1 " + status + "\r\n";
+	str = "HTTP/1.1 " + this->_status + "\r\n";
 	str = str + "Date: " + this->getTime(std::time(0)) + "\r\n";
 	str = str + "Server: Webserv-42 (Linux)\r\n";
-	if (this->_method == "GET" && status == "200 OK")
+	if (this->_method == "GET" && this->_status == "200 OK")
 	{
 		str = str + "Last-Modified: " + getTime(this->_stat.st_mtime) + "\r\n";
 		str = str + "Content-Length: " + itoa(this->_contentlength) + "\r\n";
@@ -425,25 +472,27 @@ void	Request::clear(void)
 {
 	std::vector<char>	tmp;
 
-	this->_client.actualizeTime();
+	ft_memset(&this->_stat, 0, sizeof(this->_stat));
+	this->_inparse = true;
+	this->_inprocess = false;
+	this->_inerror = false;
+	this->_inbuild = false;
+	this->_inwrite = false;
 	this->_request = "";
 	this->_header = "";
 	this->_body = "";
-	this->_status = "";
-	this->_name = "";
-	this->_method = "";
-	this->_filepath = "";
-	this->_file = -1;
-	ft_memset(&this->_stat, 0, sizeof(this->_stat));
 	this->_headerresponse = tmp;
 	this->_bodyresponse = tmp;
 	this->_response = tmp;
+	this->_status = "";
+	this->_name = "";
+	this->_method = "";
+	this->_filename = "";
+	this->_filepath = "";
+	this->_fdfile = -1;
 	this->_contentlength = 0;
 	this->_maxcontentlength = 0;
-	this->_inparse = true;
-	this->_inprocess = false;
-	this->_inbuild = false;
-	this->_inwrite = false;
 	this->_client.setInRequest(false);
 	this->_client.setToRead(true);
+	this->_client.actualizeTime();
 }

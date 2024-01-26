@@ -41,6 +41,37 @@ Manager::~Manager(void)
 std::map<int, int>	&Manager::getSockets(void)
 { return (this->_sockets); }
 
+Server	Manager::getServ(std::string name, int port)
+{
+	std::vector<int>										ports;
+	std::vector<std::vector<Server>::iterator>				res;
+	std::vector<Server>::iterator							it_serv;
+	std::vector<int>::iterator								it_port;
+	std::vector<std::vector<Server>::iterator>::iterator	it_res;
+
+	it_serv = this->_servs.begin();
+	while (it_serv != this->_servs.end())
+	{
+		ports = (*it_serv).getPorts();
+		it_port = ports.begin();
+		while (it_port != ports.end())
+		{
+			if ((*it_port) == port)
+				res.push_back((it_serv));
+			it_port++;
+		}
+		it_serv++;
+	}
+	it_res = res.begin();
+	while (it_res != res.end())
+	{
+		if ((*(*it_res)).getName() == name)
+			return (Server(*((*it_res))));
+		it_res++;
+	}
+	return (Server(*(*res.begin())));
+}
+
 //////////////////////////////
 // Functions
 void	Manager::run(void)
@@ -50,16 +81,15 @@ void	Manager::run(void)
 	vec.push_back(8080);
 	vec.push_back(8081);
 	vec.push_back(8082);
-	vec.push_back(8083);
-	vec.push_back(8084);
-	vec.push_back(8085);
-	vec.push_back(8086);
 	std::vector<int>	vec2;
 	vec2.push_back(8090);
 	vec2.push_back(8091);
 	vec2.push_back(8092);
-	Server	tmp("test.com", "./qr", vec, this->_sockets, 99999);
-	Server	tmp2("netpractice.net", "./np/", vec2, this->_sockets, 99999);
+	std::map<std::string, std::string>	err;
+	err.insert(std::pair<std::string, std::string>("403", "/error_page/403.html"));
+	err.insert(std::pair<std::string, std::string>("404", "/error_page/404.html"));
+	Server	tmp("test.com", "./qr", vec, err, 99999, this->_sockets);
+	Server	tmp2("netpractice.net", "./np/", vec2, err, 99999, this->_sockets);
 	this->_servs.push_back(tmp);
 	this->_servs.push_back(tmp2);
 	std::cout << std::endl;
@@ -262,37 +292,6 @@ void	Manager::manageClients(void)
 		}
 		it++;
 	}
-}
-
-std::vector<Server>::iterator	Manager::searchServ(std::string name, int port)
-{
-	std::vector<int>										ports;
-	std::vector<std::vector<Server>::iterator>				res;
-	std::vector<Server>::iterator							it_serv;
-	std::vector<int>::iterator								it_port;
-	std::vector<std::vector<Server>::iterator>::iterator	it_res;
-
-	it_serv = this->_servs.begin();
-	while (it_serv != this->_servs.end())
-	{
-		ports = (*it_serv).getPorts();
-		it_port = ports.begin();
-		while (it_port != ports.end())
-		{
-			if ((*it_port) == port)
-				res.push_back((it_serv));
-			it_port++;
-		}
-		it_serv++;
-	}
-	it_res = res.begin();
-	while (it_res != res.end())
-	{
-		if ((*(*it_res)).getName() == name)
-			return ((*it_res));
-		it_res++;
-	}
-	return (*res.begin());
 }
 
 void	Manager::manageTimeout(void)

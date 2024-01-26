@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:38:00 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/25 15:59:48 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/26 10:25:14 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,8 +14,10 @@
 
 //////////////////////////////
 // Constructors and Destructor
-Server::Server(std::string name, std::string root, std::vector<int> ports, std::map<int, int> &m, int bodymax) \
-	: _name(name), _root(root), _bodymax(bodymax)
+Server::Server(void) { }
+
+Server::Server(std::string name, std::string root, std::vector<int> ports, std::map<std::string, std::string> errors, int bodymax, std::map<int, int> &m) \
+	: _name(name), _root(root), _errors(errors), _bodymax(bodymax)
 {
 	size_t						i;
 	size_t						err;
@@ -26,10 +28,10 @@ Server::Server(std::string name, std::string root, std::vector<int> ports, std::
 	it = ports.begin();
 	while (it != ports.end())
 	{
-		if (!this->bindPort(m, (*it)))
-			err++;
-		else
+		if (this->bindPort(m, (*it)))
 			this->_ports.push_back((*it));
+		else
+			err++;
 		it++;
 	}
 	if (err == ports.size())
@@ -57,6 +59,7 @@ Server::Server(Server const &rhs)
 	this->_name = rhs._name;
 	this->_root = rhs._root;
 	this->_ports = rhs._ports;
+	this->_errors = rhs._errors;
 	this->_bodymax = rhs._bodymax;
 }
 
@@ -71,6 +74,7 @@ Server	&Server::operator=(Server const &rhs)
 		this->_name = rhs._name;
 		this->_root = rhs._root;
 		this->_ports = rhs._ports;
+		this->_errors = rhs._errors;
 		this->_bodymax = rhs._bodymax;
 	}
 	return (*this);
@@ -86,6 +90,9 @@ std::string	Server::getRoot(void) const
 
 std::vector<int>	&Server::getPorts(void)
 { return (this->_ports); }
+
+std::map<std::string, std::string>	Server::getErrors(void) const
+{ return (this->_errors); }
 
 int	Server::getBodymax(void) const
 { return (this->_bodymax); }

@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:05:30 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/25 15:05:17 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/26 08:53:03 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@ int	main(int argc, char **argv)
 	{
 		if (argc != 2)
 		{
-			std::cerr << "Usage: ./webserv <\"config\".conf>" << std::endl;
+			std::cerr << "[*] Usage: ./webserv <\"config\".conf>" << std::endl;
 			return (1);
 		}
 		if (signal(SIGPIPE, SIG_IGN) == SIG_ERR || signal(SIGINT, sigint_handler) == SIG_ERR \
@@ -46,7 +46,7 @@ int	main(int argc, char **argv)
 			std::cerr << "[!] Critical error in the program: " << e.what();
 			if (errno != 0)
 				std::cerr << strerror(errno);
-			std::cerr << ". All connection have been closed." << std::endl;
+			std::cerr << "\nAll connection have been closed." << std::endl;
 			ret = 1;
 		}
 		std::cout << std::endl << "[!] The program has been closed.\n";

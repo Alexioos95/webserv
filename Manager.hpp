@@ -46,29 +46,29 @@ class Manager
 	// Exceptions
 		class SigintException : public std::exception { };
 		class SelectException : public std::exception
-			{ public: const char				*what(void) const throw(); };
+			{ public: const char	*what(void) const throw(); };
 	// Getters
-		std::map<int, int>						&getSockets(void);
+		std::map<int, int>			&getSockets(void);
+		Server						getServ(std::string name, int port);
 	// Functions
-		void									run(void);
-		void									shutdown(void);
-		std::vector<Server>::iterator			searchServ(std::string name, int port);
+		void						run(void);
+		void						shutdown(void);
 
 	private:
 	// Functions
-		void									manageFDSets(void);
-		void									managePorts(void);
-		void									manageClients(void);
-		void									manageTimeout(void);
+		void						manageFDSets(void);
+		void						managePorts(void);
+		void						manageClients(void);
+		void						manageTimeout(void);
 	// Attributes
-		struct timeval							_timeout;
-		time_t									_timer;
-		std::map<int, int>						_sockets;
-		std::vector<Server>						_servs;
-		std::vector<Client>						_clients;
-		fd_set									_rset;
-		fd_set									_wset;
-		fd_set									_errset;
+		struct timeval				_timeout;
+		time_t						_timer;
+		std::map<int, int>			_sockets;
+		std::vector<Server>			_servs;
+		std::vector<Client>			_clients;
+		fd_set						_rset;
+		fd_set						_wset;
+		fd_set						_errset;
 };
 
 void	*ft_memset(void *s, int c, size_t n);
