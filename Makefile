@@ -6,7 +6,7 @@
 #    By: apayen <apayen@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/10/17 14:41:49 by apayen            #+#    #+#              #
-#    Updated: 2024/01/23 11:32:06 by apayen           ###   ########.fr        #
+#    Updated: 2024/01/30 13:20:49 by apayen           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -19,6 +19,7 @@ SRC = 	$(addprefix $(DIR)/,	\
 		Server.cpp				\
 		Client.cpp				\
 		Request.cpp				\
+		Location.cpp			\
 		utils.cpp)
 
 OBJ =		$(SRC:.cpp=.o)

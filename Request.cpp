@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/26 13:12:18 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/30 15:02:03 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,8 @@
 //////////////////////////////
 // Constructors and Destructor
 Request::Request(Client &cl) : _client(cl), _inparse(true), _inprocess(false), \
-	_inerror(true), _inbuild(false), _inwrite(false), _fdfile(-1), _contentlength(0), _maxcontentlength(0) { }
+	_inerror(true), _inbuild(false), _inwrite(false), _fdfile(-1), _contentlength(0), \
+	_maxcontentlength(0), _dir(false), _redirected(0) { }
 
 Request::~Request(void) { }
 
@@ -84,7 +85,10 @@ int	Request::writer(void)
 		{
 			std::string tmp;
 
-			tmp = this->error();
+			if (this->_dir)
+				; //this->autoindex();
+			else if (this->_status != "301 Moved Permanently")
+				tmp = this->error();
 			if (tmp != "102 Processing")
 			{
 				this->_inprocess = false;
@@ -211,7 +215,7 @@ std::string	Request::parse(void)
 		this->_client.setKeepAlive(false);
 	else
 		this->_client.setKeepAlive(true);
-	return ("102 Processing");
+	return (this->checkLocation());
 }
 
 bool	Request::searchServ()
@@ -234,6 +238,59 @@ bool	Request::searchServ()
 		return (false);
 	this->_serv = this->_client.getManager()->getServ(this->_name, std::atoi(port.c_str()));
 	return (true);
+}
+
+std::string	Request::checkLocation(void)
+{
+	Location 	l;
+	struct stat st;
+	std::string	path;
+
+	ft_memset(&st, 0, sizeof(st));
+	l = this->_serv.getLocation(this->_filename);
+	if (!l.allowMethod(this->_method))
+		return ("405 Method Not Allowed");
+	if (l.getAlias().first)
+	{
+		this->_filename = l.getAlias().second;
+		this->_filepath = "Servers/" + this->_serv.getRoot() + '/' + this->_filename;
+	}
+	if (stat(this->_filepath.c_str(), &st) == -1 && errno != ENOENT)
+		return ("500 Internal Server Error");
+	errno = 0;
+	if (S_ISDIR(st.st_mode))
+	{
+		this->_dir = true;
+		if (!l.getAutoindex().first)
+			return ("403 Forbidden");
+		path = l.getAutoindex().second;
+	}
+	if (l.getReturn().first)
+	{
+		this->_filename = l.getReturn().second;
+		if (this->simulateRedirect(this->_filename) == -1)
+			return ("310 Too many Redirects");
+		return ("301 Moved Permanently");
+	}
+	if (!path.empty())
+	{
+		this->_filename = path;
+		this->_filepath = "Servers/" + this->_serv.getRoot() + '/' + path;
+	}
+	return ("102 Processing");
+}
+
+int	Request::simulateRedirect(std::string path)
+{
+	Location	l;
+
+	this->_redirected++;
+	if (this->_redirected >= 1)
+		return (-1);
+	l = this->_serv.getLocation(path);
+	if (l.getReturn().first)
+		return (this->simulateRedirect(l.getReturn().second));
+	return (0);
 }
 
 std::string	Request::openf(void)
@@ -346,7 +403,7 @@ std::string	Request::post(void)
 	return ("102 Processing");
 }
 
-std::string	Request::error()
+std::string	Request::error(void)
 {
 	if (this->_inerror)
 	{
@@ -397,8 +454,10 @@ void	Request::buildResponse(void)
 	str = "HTTP/1.1 " + this->_status + "\r\n";
 	str = str + "Date: " + this->getTime(std::time(0)) + "\r\n";
 	str = str + "Server: Webserv-42 (Linux)\r\n";
+	if (this->_status == "301 Moved Permanently")
+		str = str + "Location: " + this->_filename + "\r\n";
 	if ((this->_method == "GET" && this->_status == "200 OK") \
-		|| (this->_status != "200 OK" && this->_status != "202 Created"))
+		|| (this->_status != "200 OK" && this->_status != "202 Created" && this->_status != "301 Moved Permanently"))
 	{
 		str = str + "Last-Modified: " + getTime(this->_stat.st_mtime) + "\r\n";
 		str = str + "Content-Length: " + itoa(this->_contentlength) + "\r\n";
@@ -482,7 +541,6 @@ void	Request::clear(void)
 	ft_memset(&this->_stat, 0, sizeof(this->_stat));
 	this->_inparse = true;
 	this->_inprocess = false;
-	this->_inerror = false;
 	this->_inbuild = false;
 	this->_inwrite = false;
 	this->_request = "";

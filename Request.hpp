@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/26 12:42:09 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/30 15:00:23 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,12 +63,18 @@ class Request
 		struct stat 						_stat;
 		int									_contentlength;
 		int									_maxcontentlength;
+		// Location
+		bool								_dir;
+		std::string							_redirect;
+		int									_redirected;
 	// Functions
 		// Parsing
 		std::string							parse(void);
 		void								fillHeader(size_t pos, int bytes);
 		void								fillBody(size_t pos, int bytes);
 		bool								searchServ(void);
+		std::string							checkLocation(void);
+		int									simulateRedirect(std::string path);
 		// Methods
 		std::string							openf(void);
 		std::string							create(void);

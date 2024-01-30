@@ -88,8 +88,17 @@ void	Manager::run(void)
 	std::map<std::string, std::string>	err;
 	err.insert(std::pair<std::string, std::string>("403", "/error_page/403.html"));
 	err.insert(std::pair<std::string, std::string>("404", "/error_page/404.html"));
-	Server	tmp("test.com", "./qr", vec, err, 99999, this->_sockets);
-	Server	tmp2("netpractice.net", "./np/", vec2, err, 99999, this->_sockets);
+	std::map<std::string, Location>	loc;
+	//             get   post  del    cgi        autoindex
+	//                        ret                               alias
+	Location	l1(true, true, true, false, std::pair<bool, std::string>(false, ""), \
+		std::pair<bool, std::string>(false, ""), std::pair<bool, std::string>(true, "/error_page/403.html"));
+	Location	l2(true, true, true, false, std::pair<bool, std::string>(false, ""), \
+		std::pair<bool, std::string>(false, ""), std::pair<bool, std::string>(false, ""));
+	loc.insert(loc.begin(), std::pair<std::string, Location>("/index.html", l1));
+	loc.insert(loc.begin(), std::pair<std::string, Location>("/error_page/403.html", l2));
+	Server	tmp("test.com", "./qr", vec, err, loc, 99999, this->_sockets);
+	Server	tmp2("netpractice.net", "./np/", vec2, err, loc, 99999, this->_sockets);
 	this->_servs.push_back(tmp);
 	this->_servs.push_back(tmp2);
 	std::cout << std::endl;

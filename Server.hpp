@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/12 12:00:43 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/26 10:25:03 by apayen           ###   ########.fr       */
+/*   Updated: 2024/01/30 13:15:37 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,12 +22,15 @@
 # include <unistd.h>		// close
 # include <netinet/in.h>	// sockets
 
+# include "Location.hpp"
+
 class Server
 {
 	public:
 	// Constructors and Destructor
 		Server(void);
-		Server(std::string name, std::string root, std::vector<int> ports, std::map<std::string, std::string> errors, int bodymax, std::map<int, int> &m);
+		Server(std::string name, std::string root, std::vector<int> ports, std::map<std::string, std::string> errors, \
+			std::map<std::string, Location> locations, int bodymax, std::map<int, int> &m);
 		Server(Server const &rhs);
 		~Server(void);
 	// Exceptions
@@ -39,6 +42,7 @@ class Server
 		std::string							getRoot(void) const;
 		std::vector<int>					&getPorts(void);
 		std::map<std::string, std::string>	getErrors(void) const;
+		Location							getLocation(std::string path) const;
 		int									getBodymax(void) const;
 
 	private:
@@ -49,6 +53,7 @@ class Server
 		std::string							_root;
 		std::vector<int>					_ports;
 		std::map<std::string, std::string>	_errors;
+		std::map<std::string, Location>		_locations;
 		int									_bodymax;
 };
 
