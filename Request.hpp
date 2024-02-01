@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/30 15:00:23 by apayen           ###   ########.fr       */
+/*   Updated: 2024/02/01 13:47:49 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #define REQUEST_HPP
 
 # include <ctime>			// functions time
+# include <string>			// string
 # include <vector>			// vector
 # include <cstdlib>			// atoi
 # include <iostream>		// cout
@@ -64,7 +65,11 @@ class Request
 		int									_contentlength;
 		int									_maxcontentlength;
 		// Location
+		bool								_get;
+		bool								_post;
+		bool								_del;
 		bool								_dir;
+		bool								_autoindex;
 		std::string							_redirect;
 		int									_redirected;
 	// Functions
@@ -84,6 +89,7 @@ class Request
 		std::string							error(void);
 		// Response
 		void								buildResponse(void);
+		std::string							getMethods(void);
 		std::string							getTime(std::time_t time);
 		std::string							getMime(void);
 		void								clear(void);

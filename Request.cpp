@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/30 15:02:03 by apayen           ###   ########.fr       */
+/*   Updated: 2024/02/01 14:44:30 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,8 @@
 // Constructors and Destructor
 Request::Request(Client &cl) : _client(cl), _inparse(true), _inprocess(false), \
 	_inerror(true), _inbuild(false), _inwrite(false), _fdfile(-1), _contentlength(0), \
-	_maxcontentlength(0), _dir(false), _redirected(0) { }
+	_maxcontentlength(-1), _get(true), _post(true), _del(true), _dir(false), \
+	_autoindex(false), _redirected(0) { }
 
 Request::~Request(void) { }
 
@@ -35,7 +36,7 @@ int	Request::reader(void)
 		return (bytes);
 	this->_request = this->_request + buffer;
 	pos = this->_request.find("\r\n\r\n");
-	if (pos == std::string::npos && this->_contentlength + bytes < this->_maxcontentlength)
+	if (pos == std::string::npos || this->_contentlength + bytes < this->_maxcontentlength)
 	{
 		std::cout << "[*] Buffer of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n";
 		std::cout << this->_request << "\n" << std::endl;
@@ -86,7 +87,10 @@ int	Request::writer(void)
 			std::string tmp;
 
 			if (this->_dir)
-				; //this->autoindex();
+			{
+				// Do AutoIndex;
+				this->_stat.st_mtime = std::time(0);
+			}
 			else if (this->_status != "301 Moved Permanently")
 				tmp = this->error();
 			if (tmp != "102 Processing")
@@ -195,6 +199,8 @@ std::string	Request::parse(void)
 	this->_filename = line.substr(pos, (line.find(' ', pos) - (pos)));
 	if (this->_filename.empty())
 		return ("400 Bad Request");
+	else if (this->_filename.find("..") != std::string::npos)
+		return ("403 Forbidden");
 	this->_filepath = "Servers/" + root + '/' + this->_filename;
 	pos = this->_filename.length() + 2;
 	version = line.substr((this->_method.length() + pos), (line.find("\r\n") - (this->_method.length() + pos + 1)));
@@ -244,11 +250,10 @@ std::string	Request::checkLocation(void)
 {
 	Location 	l;
 	struct stat st;
-	std::string	path;
 
 	ft_memset(&st, 0, sizeof(st));
 	l = this->_serv.getLocation(this->_filename);
-	if (!l.allowMethod(this->_method))
+	if (!l.allowMethod(this->_method, this->_get, this->_post, this->_del))
 		return ("405 Method Not Allowed");
 	if (l.getAlias().first)
 	{
@@ -261,9 +266,15 @@ std::string	Request::checkLocation(void)
 	if (S_ISDIR(st.st_mode))
 	{
 		this->_dir = true;
-		if (!l.getAutoindex().first)
+		if (l.getIndex().first)
+		{
+			this->_filename = l.getIndex().second;
+			this->_filepath = "Servers/" + this->_serv.getRoot() + '/' + this->_filename;
+		}
+		else if (l.allowAutoindex())
+			this->_autoindex = true;
+		else
 			return ("403 Forbidden");
-		path = l.getAutoindex().second;
 	}
 	if (l.getReturn().first)
 	{
@@ -271,11 +282,6 @@ std::string	Request::checkLocation(void)
 		if (this->simulateRedirect(this->_filename) == -1)
 			return ("310 Too many Redirects");
 		return ("301 Moved Permanently");
-	}
-	if (!path.empty())
-	{
-		this->_filename = path;
-		this->_filepath = "Servers/" + this->_serv.getRoot() + '/' + path;
 	}
 	return ("102 Processing");
 }
@@ -285,7 +291,7 @@ int	Request::simulateRedirect(std::string path)
 	Location	l;
 
 	this->_redirected++;
-	if (this->_redirected >= 1)
+	if (this->_redirected >= 9)
 		return (-1);
 	l = this->_serv.getLocation(path);
 	if (l.getReturn().first)
@@ -432,12 +438,12 @@ std::string	Request::error(void)
 		{
 			std::string	r;
 
-			r = r + "<!DOCTYPE html>\n<html style=\"height:100%;\" lang=\"en\">\n\t<head>\n\t\t<meta charset=\"UTF-8\">\n\t\t";
-			r = r + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\t\t";
+			r = r + "<!DOCTYPE html>\n<html style=\"height:100%;\"lang=\"en\">\n\t<head>\n\t\t<meta charset=\"UTF-8\">\n\t\t";
+			r = r + "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n\t\t";
 			r = r + "<meta http-equiv=\"X-UA-Compatible\" content=\"ie=edge\">\n\t\t";
 			r = r + "<title>" + this->_status.substr(0, 3) + "</title>\n\t</head>\n";
-			r = r + "\t<body style=\"height:100\%;display:flex;align-items: center;justify-content: center;\">\n\t\t";
-			r = r + "<main>\n\t\t\t\t<h1 style=\"font-size: 5em;\">" + this->_status.substr(0, 3) + "</h1>\n\t\t</main>\n\t</body>\n</html>";
+			r = r + "\t<body style=\"height:100\%;display:flex;align-items:center;justify-content:center;\">\n\t\t";
+			r = r + "<main>\n\t\t\t\t<h1 style=\"font-size:5em;\">" + this->_status.substr(0, 3) + "</h1>\n\t\t</main>\n\t</body>\n</html>";
 			this->_bodyresponse.insert(this->_bodyresponse.end(), r.begin(), r.end());
 			this->_stat.st_mtime = std::time(0);
 			this->_contentlength = this->_bodyresponse.size();
@@ -454,12 +460,14 @@ void	Request::buildResponse(void)
 	str = "HTTP/1.1 " + this->_status + "\r\n";
 	str = str + "Date: " + this->getTime(std::time(0)) + "\r\n";
 	str = str + "Server: Webserv-42 (Linux)\r\n";
-	if (this->_status == "301 Moved Permanently")
+	if (this->_status == "301 Moved Permanently" || this->_status == "202 Created")
 		str = str + "Location: " + this->_filename + "\r\n";
+	else if (this->_status == "405 Method Not Allowed" && !this->getMethods().empty())
+		str = str + "Allow: " + this->getMethods() + "\r\n";
 	if ((this->_method == "GET" && this->_status == "200 OK") \
 		|| (this->_status != "200 OK" && this->_status != "202 Created" && this->_status != "301 Moved Permanently"))
 	{
-		str = str + "Last-Modified: " + getTime(this->_stat.st_mtime) + "\r\n";
+		str = str + "Last-Modified: " + this->getTime(this->_stat.st_mtime) + "\r\n";
 		str = str + "Content-Length: " + itoa(this->_contentlength) + "\r\n";
 		if (this->_status == "200 OK")
 			str = str + "Content-Type: " + this->getMime() + "\r\n";
@@ -485,18 +493,48 @@ void	Request::buildResponse(void)
 	this->_response.insert(this->_response.end(), str.begin(), str.end());
 }
 
+std::string	Request::getMethods(void)
+{
+	std::string line;
+	size_t		pos;
+	size_t		end;
+
+	if (this->_get)
+		line = line + "GET ";
+	if (this->_post)
+		line = line + "POST ";
+	if (this->_del)
+		line = line + "DELETE";
+	if (*(line.end() - 1) == ' ')
+		line.resize(line.length() - 1);
+	end = 0;
+	while (1)
+	{
+		pos = line.find(' ', end);
+		if (pos == std::string::npos)
+			break ;
+		line.insert(pos, ",");
+		end = pos + 2;
+	}
+	return (line);
+}
+
 std::string	Request::getTime(std::time_t time)
 {
 	std::string	day;
+	int			space;
 	std::string	month;
 	std::string	nbday;
 	std::string	hour;
 	std::string	year;
 
 	std::string line(std::asctime(std::localtime(&time)));
+	space = 0;
+	if (line[8] == ' ')
+		space++;
 	day = line.substr(0, 3);
 	month = line.substr(4, 3);
-	nbday = line.substr(8, 2);
+	nbday = line.substr(8 + space, 2 - space);
 	hour = line.substr(11, 8);
 	year = line.substr(20, 4);
 	line = day + ", " + nbday + " " + month + " " + year + " " + hour + " CET";
@@ -541,6 +579,7 @@ void	Request::clear(void)
 	ft_memset(&this->_stat, 0, sizeof(this->_stat));
 	this->_inparse = true;
 	this->_inprocess = false;
+	this->_inerror = false;
 	this->_inbuild = false;
 	this->_inwrite = false;
 	this->_request = "";
@@ -557,6 +596,13 @@ void	Request::clear(void)
 	this->_fdfile = -1;
 	this->_contentlength = 0;
 	this->_maxcontentlength = 0;
+	this->_get = true;
+	this->_post = true;
+	this->_del = true;
+	this->_dir = false;
+	this->_autoindex = false;
+	this->_redirect = "";
+	this->_redirected = 0;
 	this->_client.setInRequest(false);
 	this->_client.setToRead(true);
 	this->_client.actualizeTime();

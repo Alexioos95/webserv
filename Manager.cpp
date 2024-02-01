@@ -89,12 +89,27 @@ void	Manager::run(void)
 	err.insert(std::pair<std::string, std::string>("403", "/error_page/403.html"));
 	err.insert(std::pair<std::string, std::string>("404", "/error_page/404.html"));
 	std::map<std::string, Location>	loc;
-	//             get   post  del    cgi        autoindex
-	//                        ret                               alias
-	Location	l1(true, true, true, false, std::pair<bool, std::string>(false, ""), \
-		std::pair<bool, std::string>(false, ""), std::pair<bool, std::string>(true, "/error_page/403.html"));
-	Location	l2(true, true, true, false, std::pair<bool, std::string>(false, ""), \
-		std::pair<bool, std::string>(false, ""), std::pair<bool, std::string>(false, ""));
+
+					// Methods (bools)
+		// CGI			(bool)
+		// Autoindex	(bool)
+		// Index		(pair)
+		// Return		(pair)
+		// Alias		(pair)
+	Location	l1(true, false, false, \
+		false, \
+		false, \
+		std::pair<bool, std::string>(false, ""), \
+		std::pair<bool, std::string>(false, "/error_page/403.html"),	\
+		std::pair<bool, std::string>(false, ""));
+
+	Location	l2(true, true, true, \
+		false, \
+		false, \
+		std::pair<bool, std::string>(false, ""), \
+		std::pair<bool, std::string>(false, "/index.html"),	\
+		std::pair<bool, std::string>(false, ""));
+
 	loc.insert(loc.begin(), std::pair<std::string, Location>("/index.html", l1));
 	loc.insert(loc.begin(), std::pair<std::string, Location>("/error_page/403.html", l2));
 	Server	tmp("test.com", "./qr", vec, err, loc, 99999, this->_sockets);
@@ -311,7 +326,7 @@ void	Manager::manageTimeout(void)
 	this->_timer = std::time(0);
 	while (it != this->_clients.end())
 	{
-		if ((*it).getTimer() - this->_timer < -9)
+		if ((*it).getTimer() - this->_timer < -119)
 		{
 			std::cout << "[-] A client (fd " << (*it).getFD() << ") timed out. ";
 			std::cout << "Closing the connection...\n" << std::endl;

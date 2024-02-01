@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/30 08:54:55 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/30 15:16:21 by apayen           ###   ########.fr       */
+/*   Updated: 2024/02/01 13:45:07 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,16 +14,15 @@
 
 //////////////////////////////
 // Constructors and Destructor
-Location::Location(void) : _get(true), _post(true), _del(true), _cgi(false)
+Location::Location(void) : _get(true), _post(true), _del(true), _cgi(false), _autoindex(false)
 {
-	this->_autoindex = std::pair<bool, std::string>(false, "");
 	this->_ret = std::pair<bool, std::string>(false, "");
 	this->_alias = std::pair<bool, std::string>(false, "");
 }
 
-Location::Location(bool get, bool post, bool del, bool cgi, std::pair<bool, std::string> autoindex, \
-	std::pair<bool, std::string> ret, std::pair<bool, std::string> alias) : _get(get), _post(post), \
-	_del(del), _cgi(cgi), _autoindex(autoindex), _ret(ret), _alias(alias) { }
+Location::Location(bool get, bool post, bool del, bool cgi, bool autoindex, \
+	std::pair<bool, std::string> index, std::pair<bool, std::string> ret, std::pair<bool, std::string> alias) \
+	: _get(get), _post(post), _del(del), _cgi(cgi), _autoindex(autoindex), _index(index), _ret(ret), _alias(alias) { }
 
 Location::Location(Location const &rhs)
 {
@@ -32,6 +31,7 @@ Location::Location(Location const &rhs)
 	this->_del = rhs._del;
 	this->_cgi = rhs._cgi;
 	this->_autoindex = rhs._autoindex;
+	this->_index = rhs._index;
 	this->_ret = rhs._ret;
 	this->_alias = rhs._alias;
 }
@@ -49,6 +49,7 @@ Location	&Location::operator=(Location const &rhs)
 		this->_del = rhs._del;
 		this->_cgi = rhs._cgi;
 		this->_autoindex = rhs._autoindex;
+		this->_index = rhs._index;
 		this->_ret = rhs._ret;
 		this->_alias = rhs._alias;
 	}
@@ -57,22 +58,28 @@ Location	&Location::operator=(Location const &rhs)
 
 //////////////////////////////
 // Functions
-bool	Location::allowMethod(std::string method) const
+bool	Location::allowMethod(std::string method, bool &get, bool &post, bool &del) const
 {
+	get = this->_get;
+	post = this->_post;
+	del = this->_del;
 	if (method == "GET")
-		return (this->_get);
+		return (get);
 	else if (method == "POST")
-		return (this->_post);
+		return (post);
 	else if (method == "DELETE")
-		return (this->_del);
-	return (true);
+		return (del);
+	return (false);
 }
 
 bool	Location::allowCgi(void) const
 { return (this->_cgi); }
 
-std::pair<bool, std::string>	Location::getAutoindex(void) const
+bool	Location::allowAutoindex(void) const
 { return (this->_autoindex); }
+
+std::pair<bool, std::string>	Location::getIndex(void) const
+{ return (this->_index); }
 
 std::pair<bool, std::string>	Location::getReturn(void) const
 { return (this->_ret); }
