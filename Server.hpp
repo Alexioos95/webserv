@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/12 12:00:43 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/30 13:15:37 by apayen           ###   ########.fr       */
+/*   Updated: 2024/02/05 13:14:07 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,7 @@ class Server
 	// Constructors and Destructor
 		Server(void);
 		Server(std::string name, std::string root, std::vector<int> ports, std::map<std::string, std::string> errors, \
-			std::map<std::string, Location> locations, int bodymax, std::map<int, int> &m);
+			std::vector<Location> locations, int bodymax, std::map<int, int> &m);
 		Server(Server const &rhs);
 		~Server(void);
 	// Exceptions
@@ -53,7 +53,7 @@ class Server
 		std::string							_root;
 		std::vector<int>					_ports;
 		std::map<std::string, std::string>	_errors;
-		std::map<std::string, Location>		_locations;
+		std::vector<Location>				_locations;
 		int									_bodymax;
 };
 

@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/02/01 14:44:30 by apayen           ###   ########.fr       */
+/*   Updated: 2024/02/08 11:10:16 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,8 +17,8 @@
 // Constructors and Destructor
 Request::Request(Client &cl) : _client(cl), _inparse(true), _inprocess(false), \
 	_inerror(true), _inbuild(false), _inwrite(false), _fdfile(-1), _contentlength(0), \
-	_maxcontentlength(-1), _get(true), _post(true), _del(true), _dir(false), \
-	_autoindex(false), _redirected(0) { }
+	_maxcontentlength(-1), _get(true), _post(true), _del(true), _autoindex(false), _redirected(0) \
+{ }
 
 Request::~Request(void) { }
 
@@ -86,7 +86,7 @@ int	Request::writer(void)
 		{
 			std::string tmp;
 
-			if (this->_dir)
+			if (this->_autoindex)
 			{
 				// Do AutoIndex;
 				this->_stat.st_mtime = std::time(0);
@@ -154,23 +154,25 @@ void	Request::fillHeader(size_t pos, int bytes)
 
 void	Request::fillBody(size_t pos, int bytes)
 {
+	std::string	crlf;
+
+	crlf = "\r\n\r\n";
 	if (this->_request.find("\r\n\r\n") != std::string::npos)
 	{
-		this->_body = this->_body + this->_request.substr(0, pos + 4);
+		this->_body.insert(this->_body.end(), this->_request.begin(), this->_request.begin() + pos + 4);
 		this->_request.erase(0, pos + 4);
 	}
 	else
 	{
-		this->_body = this->_body + this->_request;
+		this->_body.insert(this->_body.end(), this->_request.begin(), this->_request.end());
 		this->_request.erase(0, this->_request.length());
 	}
 	this->_contentlength = this->_contentlength + bytes;
 	if (this->_contentlength > this->_maxcontentlength)
 		this->_body.resize(this->_maxcontentlength);
-	if (this->_contentlength >= this->_maxcontentlength || this->_body.find("\r\n\r\n") != std::string::npos)
+	if (this->_contentlength >= this->_maxcontentlength \
+		|| std::search(this->_body.begin(), this->_body.end(), crlf.begin(), crlf.end()) != this->_body.end())
 	{
-		std::cout << "[*] Body of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n";
-		std::cout << this->_body << "\n" << std::endl;
 		this->_contentlength = 0;
 		this->_client.setToRead(false);
 	}
@@ -255,9 +257,15 @@ std::string	Request::checkLocation(void)
 	l = this->_serv.getLocation(this->_filename);
 	if (!l.allowMethod(this->_method, this->_get, this->_post, this->_del))
 		return ("405 Method Not Allowed");
+	if (this->_method == "POST" && l.getDirPost().first)
+	{
+		this->_filename = l.getDirPost().second + '/' + this->_filename;
+		this->_filepath = "Servers/" + this->_serv.getRoot() + '/' + this->_filename;
+		return ("102 Processing");
+	}
 	if (l.getAlias().first)
 	{
-		this->_filename = l.getAlias().second;
+		this->_filename.replace(this->_filename.find(l.getPath()), l.getPath().length(), l.getAlias().second);
 		this->_filepath = "Servers/" + this->_serv.getRoot() + '/' + this->_filename;
 	}
 	if (stat(this->_filepath.c_str(), &st) == -1 && errno != ENOENT)
@@ -265,7 +273,6 @@ std::string	Request::checkLocation(void)
 	errno = 0;
 	if (S_ISDIR(st.st_mode))
 	{
-		this->_dir = true;
 		if (l.getIndex().first)
 		{
 			this->_filename = l.getIndex().second;
@@ -342,10 +349,19 @@ std::string	Request::del(void)
 
 std::string	Request::create(void)
 {
+
 	if (access(this->_filepath.c_str(), F_OK) != -1)
 		return ("409 Conflict");
+	std::string	cmd;
+	cmd = "mkdir -p -m 755 " + this->_filepath.substr(0, this->_filepath.find_last_of('/'));
+	if (std::system(cmd.c_str()) != 0)
+	{
+		std::cout << this->_filepath << std::endl;
+		std::cout << strerror(errno) << std::endl;
+		return ("500 Internal Server Error...");
+	}
 	errno = 0;
-	this->_fdfile = open(this->_filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC);
+	this->_fdfile = open(this->_filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
 	if (errno)
 	{
 		if (errno == ELOOP)
@@ -357,7 +373,11 @@ std::string	Request::create(void)
 		else if (errno == EMFILE || errno == ENFILE || errno == ENOMEM || errno == ENOSPC)
 			return ("503 Service Unavailable");
 		else
+		{
+			std::cout << this->_filepath << std::endl;
+			std::cout << strerror(errno) << std::endl;
 			return ("500 Internal Server Error");
+		}
 	}
 	return ("102 Processing");
 }
@@ -391,11 +411,12 @@ std::string	Request::post(void)
 	size_t	len;
 	ssize_t	bytes;
 
-	len = this->_body.length();
+	len = this->_body.size();
 	i = len;
 	if (i > 4096)
 		i = 4096;
-	bytes = write(this->_fdfile, this->_body.c_str(), i);
+	bytes = write(this->_fdfile, this->_body.data(), i);
+	this->_body.erase(this->_body.begin(), this->_body.begin() + i);
 	if (bytes <= 0)
 	{
 		close(this->_fdfile);
@@ -584,7 +605,7 @@ void	Request::clear(void)
 	this->_inwrite = false;
 	this->_request = "";
 	this->_header = "";
-	this->_body = "";
+	this->_body = tmp;
 	this->_headerresponse = tmp;
 	this->_bodyresponse = tmp;
 	this->_response = tmp;
@@ -599,7 +620,6 @@ void	Request::clear(void)
 	this->_get = true;
 	this->_post = true;
 	this->_del = true;
-	this->_dir = false;
 	this->_autoindex = false;
 	this->_redirect = "";
 	this->_redirected = 0;

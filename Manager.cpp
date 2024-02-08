@@ -88,30 +88,78 @@ void	Manager::run(void)
 	std::map<std::string, std::string>	err;
 	err.insert(std::pair<std::string, std::string>("403", "/error_page/403.html"));
 	err.insert(std::pair<std::string, std::string>("404", "/error_page/404.html"));
-	std::map<std::string, Location>	loc;
+	std::vector<Location>	loc;
 
 					// Methods (bools)
 		// CGI			(bool)
 		// Autoindex	(bool)
 		// Index		(pair)
+		// Post			(pair)
 		// Return		(pair)
 		// Alias		(pair)
-	Location	l1(true, false, false, \
-		false, \
-		false, \
-		std::pair<bool, std::string>(false, ""), \
-		std::pair<bool, std::string>(false, "/error_page/403.html"),	\
+	Location	l1("/", true, false, false,	\
+		false,	\
+		false,	\
+		std::pair<bool, std::string>(true, "/html/index.html"),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""),	\
 		std::pair<bool, std::string>(false, ""));
 
-	Location	l2(true, true, true, \
-		false, \
-		false, \
-		std::pair<bool, std::string>(false, ""), \
-		std::pair<bool, std::string>(false, "/index.html"),	\
+	Location	l2("/css", true, false, false,	\
+		false,	\
+		false,	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""),	\
 		std::pair<bool, std::string>(false, ""));
 
-	loc.insert(loc.begin(), std::pair<std::string, Location>("/index.html", l1));
-	loc.insert(loc.begin(), std::pair<std::string, Location>("/error_page/403.html", l2));
+	Location	l3("/html", true, false, false,	\
+		false,	\
+		false,	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""));
+
+	Location	l4("/images/", true, false, false,	\
+		false,	\
+		false,	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""));
+
+	Location	l5("/index.html", true, false, false,	\
+		false,	\
+		false,	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(true, "/html/index.html"));
+
+	Location	l6("/error_page", false, false, false,	\
+		false,	\
+		false,	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""));
+
+	Location	l7("/bla", true, true, true,	\
+		false,	\
+		false,	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(true, "/yikes"),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""));
+
+	loc.push_back(l1);
+	loc.push_back(l2);
+	loc.push_back(l3);
+	loc.push_back(l4);
+	loc.push_back(l5);
+	loc.push_back(l6);
+	loc.push_back(l7);
 	Server	tmp("test.com", "./qr", vec, err, loc, 99999, this->_sockets);
 	Server	tmp2("netpractice.net", "./np/", vec2, err, loc, 99999, this->_sockets);
 	this->_servs.push_back(tmp);

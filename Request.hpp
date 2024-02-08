@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/02/01 13:47:49 by apayen           ###   ########.fr       */
+/*   Updated: 2024/02/08 09:16:15 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 # include <vector>			// vector
 # include <cstdlib>			// atoi
 # include <iostream>		// cout
+# include <algorithm>		// STL
 							// stat
 # include <unistd.h>
 # include <sys/stat.h>
@@ -50,7 +51,7 @@ class Request
 		// Request
 		std::string							_request;
 		std::string							_header;
-		std::string							_body;
+		std::vector<char>					_body;
 		std::vector<char>					_headerresponse;
 		std::vector<char>					_bodyresponse;
 		std::vector<char>					_response;
@@ -68,7 +69,6 @@ class Request
 		bool								_get;
 		bool								_post;
 		bool								_del;
-		bool								_dir;
 		bool								_autoindex;
 		std::string							_redirect;
 		int									_redirected;

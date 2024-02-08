@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:38:00 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/30 13:16:23 by apayen           ###   ########.fr       */
+/*   Updated: 2024/02/05 15:53:13 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@
 Server::Server(void) { }
 
 Server::Server(std::string name, std::string root, std::vector<int> ports, std::map<std::string, std::string> errors, \
-	std::map<std::string, Location> locations, int bodymax, std::map<int, int> &m) \
+	std::vector<Location> locations, int bodymax, std::map<int, int> &m) \
 	: _name(name), _root(root), _errors(errors), _locations(locations), _bodymax(bodymax)
 {
 	size_t						i;
@@ -99,12 +99,34 @@ std::map<std::string, std::string>	Server::getErrors(void) const
 
 Location	Server::getLocation(std::string path) const
 {
-	std::map<std::string, Location>::const_iterator	it;
+	std::vector<Location>::const_iterator	it;
 
-	it = this->_locations.find(path);
-	if (it == this->_locations.end())
-		return (Location());
-	return ((*it).second);
+	while (path != "/")
+	{
+		it = this->_locations.begin();
+		while (it != this->_locations.end())
+		{
+			if (path == (*it).getPath())
+				return ((*it));
+			if (*(path.end() - 1) == '/')
+			{
+				if (path.substr(0, path.length() - 1) == (*it).getPath())
+					return ((*it));
+			}
+			it++;
+		}
+		if (path.length() >= 1 && *(path.end() - 1) == '/')
+			path.erase(path.end() - 1);
+		path.resize(path.find_last_of('/') + 1);
+	}
+	it = this->_locations.begin();
+	while (it != this->_locations.end())
+	{
+		if (path == (*it).getPath())
+			return ((*it));
+		it++;
+	}
+	return (Location());
 }
 
 int	Server::getBodymax(void) const
