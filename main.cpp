@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:05:30 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/30 15:15:34 by apayen           ###   ########.fr       */
+/*   Updated: 2024/02/09 10:06:16 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,15 +20,19 @@ int	main(int argc, char **argv)
 
 	try
 	{
-		if (argc != 2)
+		if (argc == 1)
 		{
-			std::cerr << "[*] Usage: ./webserv <\"config\".conf>" << std::endl;
-			return (1);
+			std::cout << "No configuration file was given in argument. Loading default configuration...\n" << std::endl;
+			mng.defaultconfig();
 		}
-		if (signal(SIGPIPE, SIG_IGN) == SIG_ERR || signal(SIGINT, sigint_handler) == SIG_ERR \
-			|| signal(SIGQUIT, sigquit_handler) == SIG_ERR)
+		else if (argc == 2)
+			std::cout << "Loading configuration file..." << std::endl;
+		else if (argc >= 3)
+			std::cout << "Multiple configuration files were given in argument. Only the first one will be loaded. Loading..." << std::endl;
+		if (signal(SIGPIPE, SIG_IGN) == SIG_ERR || signal(SIGINT, sig_handler) == SIG_ERR || signal(SIGQUIT, sig_handler) == SIG_ERR)
 		{
 			std::cerr << "[!] Critical error in the program: signal: " << strerror(errno) << std::endl;
+			std::cout << asciiart() << std::endl;
 			return (1);
 		}
 		mng.run();
@@ -46,14 +50,10 @@ int	main(int argc, char **argv)
 			std::cerr << "[!] Critical error in the program: " << e.what();
 			if (errno != 0)
 				std::cerr << strerror(errno);
-			std::cerr << "\nAll connection have been closed." << std::endl;
+			std::cerr << "\n[-] All connection have been closed." << std::endl;
 			ret = 1;
 		}
-		std::cout << std::endl << "[!] The program has been closed.\n";
-		std::cout << "  _ _____ _ _     __  _ _____   _______   _____ _ __ __ ___ _ \n";
-		std::cout << " `.\\_   _| | |   |  \\| | __\\ \\_/ /_   _| |_   _| |  V  | __/ \\\n";
-		std::cout << "     | | | | |_  | | ' | _| > , <  | |     | | | | \\_/ | _|\\_/\n";
-		std::cout << "     |_| |_|___| |_|\\__|___/_/ \\_\\ |_|     |_| |_|_| |_|___(_)\n" << std::endl;
+		std::cout << asciiart() << std::endl;
 		return (ret);
 	}
 	return (0);

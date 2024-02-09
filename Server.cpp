@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:38:00 by apayen            #+#    #+#             */
-/*   Updated: 2024/02/05 15:53:13 by apayen           ###   ########.fr       */
+/*   Updated: 2024/02/09 11:20:31 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ Server::Server(std::string name, std::string root, std::vector<int> ports, std::
 	}
 	if (err == ports.size())
 	{
-		std::cerr << "[!] server " << name << " couldn't be created" << std::endl;
+		std::cerr << "[!] Server " << name << " couldn't be created" << std::endl;
 		throw (CreationException());
 	}
 	std::cout << "[+] Succesfully created server " << name << "\n";

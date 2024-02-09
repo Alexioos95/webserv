@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:41:38 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/25 15:58:42 by apayen           ###   ########.fr       */
+/*   Updated: 2024/02/09 11:22:45 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,6 @@
 # include <iostream>		// cout
 
 # include "Manager.hpp"
-# include "Server.hpp"
 # include "Request.hpp"
 
 class Client

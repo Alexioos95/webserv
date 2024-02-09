@@ -6,23 +6,19 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/04 14:35:24 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/25 10:07:39 by apayen           ###   ########.fr       */
+/*   Updated: 2024/02/08 12:56:04 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Manager.hpp"
-#include "Client.hpp"
 
 bool g_sigint = false;
 
-void	sigint_handler(int sig)
+void	sig_handler(int sig)
 {
-	static_cast<void>(sig);
-	g_sigint = true;
+	if (sig == SIGINT)
+		g_sigint = true;
 }
-
-void		sigquit_handler(int sig)
-{ static_cast<void>(sig); }
 
 void	*ft_memset(void *s, int c, size_t n)
 {
@@ -51,4 +47,16 @@ std::string	itoa(int nbi)
 		nbi = nbi / 10;
 	}
 	return (nb);
+}
+
+std::string	asciiart(void)
+{
+	std::string	ret;
+
+	ret = ret + "\n[!] The program has been closed.\n";
+	ret = ret + "  _ _____ _ _     __  _ _____   _______   _____ _ __ __ ___ _ \n";
+	ret = ret + " `.\\_   _| | |   |  \\| | __\\ \\_/ /_   _| |_   _| |  V  | __/ \\\n";
+	ret = ret + "     | | | | |_  | | ' | _| > , <  | |     | | | | \\_/ | _|\\_/\n";
+	ret = ret + "     |_| |_|___| |_|\\__|___/_/ \\_\\ |_|     |_| |_|_| |_|___(_)\n";
+	return (ret);
 }

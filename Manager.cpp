@@ -15,11 +15,6 @@
 #include "Client.hpp"
 
 //////////////////////////////
-// Exceptions
-const char	*Manager::SelectException::what(void) const throw()
-{ return ("Select: "); }
-
-//////////////////////////////
 // Constructors and Destructor
 Manager::Manager(void)
 { this->_timeout.tv_sec = 1; this->_timeout.tv_usec = 0; }
@@ -73,10 +68,9 @@ Server	Manager::getServ(std::string name, int port)
 }
 
 //////////////////////////////
-// Functions
-void	Manager::run(void)
+// Functions: public
+void	Manager::defaultconfig(void)
 {
-	// v A enlever, c'est juste pour test. v
 	std::vector<int>	vec;
 	vec.push_back(8080);
 	vec.push_back(8081);
@@ -85,12 +79,13 @@ void	Manager::run(void)
 	vec2.push_back(8090);
 	vec2.push_back(8091);
 	vec2.push_back(8092);
-	std::map<std::string, std::string>	err;
-	err.insert(std::pair<std::string, std::string>("403", "/error_page/403.html"));
-	err.insert(std::pair<std::string, std::string>("404", "/error_page/404.html"));
-	std::vector<Location>	loc;
-
-					// Methods (bools)
+	std::map<std::string, std::string>	err1;
+	std::map<std::string, std::string>	err2;
+	err1.insert(std::pair<std::string, std::string>("403", "/error_page/403.html"));
+	err1.insert(std::pair<std::string, std::string>("404", "/error_page/404.html"));
+	std::vector<Location>	loc1;
+	std::vector<Location>	loc2;
+					// Methods - Get, Post, Delete (bools)
 		// CGI			(bool)
 		// Autoindex	(bool)
 		// Index		(pair)
@@ -153,19 +148,22 @@ void	Manager::run(void)
 		std::pair<bool, std::string>(false, ""),	\
 		std::pair<bool, std::string>(false, ""));
 
-	loc.push_back(l1);
-	loc.push_back(l2);
-	loc.push_back(l3);
-	loc.push_back(l4);
-	loc.push_back(l5);
-	loc.push_back(l6);
-	loc.push_back(l7);
-	Server	tmp("test.com", "./qr", vec, err, loc, 99999, this->_sockets);
-	Server	tmp2("netpractice.net", "./np/", vec2, err, loc, 99999, this->_sockets);
+	loc1.push_back(l1);
+	loc1.push_back(l2);
+	loc1.push_back(l3);
+	loc1.push_back(l4);
+	loc1.push_back(l5);
+	loc1.push_back(l6);
+	loc1.push_back(l7);
+	Server	tmp("test.com", "./qr", vec, err1, loc1, 99999, this->_sockets);
+	Server	tmp2("netpractice.net", "./np/", vec2, err2, loc2, 99999, this->_sockets);
 	this->_servs.push_back(tmp);
 	this->_servs.push_back(tmp2);
 	std::cout << std::endl;
-	// ^ A enlever, c'est juste pour test. ^
+}
+
+void	Manager::run(void)
+{
 	while (1)
 	{
 		if (g_sigint == true)
@@ -189,7 +187,6 @@ void	Manager::shutdown(void)
 {
 	std::vector<Client>::iterator	it;
 	std::map<int, int>::iterator	ite;
-	std::vector<int>				sock;
 
 	it = this->_clients.begin();
 	while (it != this->_clients.end())
@@ -205,6 +202,8 @@ void	Manager::shutdown(void)
 	}
 }
 
+//////////////////////////////
+// Functions: private
 void	Manager::manageFDSets(void)
 {
 	std::map<int, int>::iterator	it;
@@ -239,10 +238,8 @@ void	Manager::managePorts(void)
 	std::vector<Server>::iterator	it_serv;
 	std::vector<int>::iterator		it_servport;
 	std::map<int, int>::iterator	tmp;
-	struct sockaddr_in				ssock;
 	int								port;
 	int								fdsock;
-	int								clfd;
 
 	it_port = this->_sockets.begin();
 	while (it_port != this->_sockets.end())
@@ -253,8 +250,8 @@ void	Manager::managePorts(void)
 		{
 			std::cerr << "[!] A critical error occured while listening on port " << port;
 			std::cerr << ". Closing the connection..." << "\n" << std::endl;
-			tmp = it_port;
 			close(fdsock);
+			tmp = it_port;
 			it_port--;
 			this->_sockets.erase(tmp);
 			it_serv = this->_servs.begin();
@@ -284,34 +281,42 @@ void	Manager::managePorts(void)
 			}
 		}
 		else if (FD_ISSET(fdsock, &this->_rset))
-		{
-			ft_memset(ssock.sin_zero, 0, sizeof(ssock.sin_zero));
-			clfd = accept(fdsock, 0, 0);
-			if (clfd == -1)
-			{
-				std::cerr << "[!] Failed to accept a new client on port " << port << ":" << strerror(errno) << "\n" << std::endl;
-				errno = 0;
-			}
-			if (fcntl(clfd, F_SETFL, O_NONBLOCK, FD_CLOEXEC) == -1)
-			{
-				std::cerr << "[!] Failed setting the fd of a new client on port " << port << " to non-bloquant";
-				std::cerr << ": " << strerror(errno) << ". Closing the connection...\n" << std::endl;
-				close(clfd);
-				errno = 0;
-			}
-			try
-			{
-				Client	cl(this, clfd, port);
-				this->_clients.push_back(cl);
-				std::cout << "[+] Accepted new client on port " << port << ". Gave him fd " << clfd << "\n" << std::endl;
-			}
-			catch (const std::exception& e)
-			{
-				std::cerr << "[!] Failed creating new client on port " << port << ": " << e.what() << '\n' << std::endl;
-				close(clfd);
-			}
-		}
+			this->acceptClient(fdsock, port);
 		it_port++;
+	}
+}
+
+void	Manager::acceptClient(int fdsock, int port)
+{
+	int					fd;
+	struct sockaddr_in	ssock;
+
+	ft_memset(ssock.sin_zero, 0, sizeof(ssock.sin_zero));
+	fd = accept(fdsock, 0, 0);
+	if (fd == -1)
+	{
+		std::cerr << "[!] Failed to accept a new client on port " << port << ":" << strerror(errno) << "\n" << std::endl;
+		errno = 0;
+		return ;
+	}
+	if (fcntl(fd, F_SETFL, O_NONBLOCK, FD_CLOEXEC) == -1)
+	{
+		std::cerr << "[!] Failed setting the fd of a new client on port " << port << " to non-bloquant";
+		std::cerr << ": " << strerror(errno) << ". Closing the connection...\n" << std::endl;
+		close(fd);
+		errno = 0;
+		return ;
+	}
+	try
+	{
+		Client	cl(this, fd, port);
+		this->_clients.push_back(cl);
+		std::cout << "[+] Accepted new client on port " << port << ". Gave him fd " << fd << "\n" << std::endl;
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "[!] Failed creating new client on port " << port << ": " << e.what() << '\n' << std::endl;
+		close(fd);
 	}
 }
 
@@ -374,7 +379,7 @@ void	Manager::manageTimeout(void)
 	this->_timer = std::time(0);
 	while (it != this->_clients.end())
 	{
-		if ((*it).getTimer() - this->_timer < -119)
+		if (this->_timer - (*it).getTimer() > 119)
 		{
 			std::cout << "[-] A client (fd " << (*it).getFD() << ") timed out. ";
 			std::cout << "Closing the connection...\n" << std::endl;

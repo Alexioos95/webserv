@@ -45,12 +45,11 @@ class Manager
 		~Manager(void);
 	// Exceptions
 		class SigintException : public std::exception { };
-		class SelectException : public std::exception
-			{ public: const char	*what(void) const throw(); };
 	// Getters
 		std::map<int, int>			&getSockets(void);
 		Server						getServ(std::string name, int port);
 	// Functions
+		void						defaultconfig(void);
 		void						run(void);
 		void						shutdown(void);
 
@@ -58,6 +57,7 @@ class Manager
 	// Functions
 		void						manageFDSets(void);
 		void						managePorts(void);
+		void						acceptClient(int fdsock, int port);
 		void						manageClients(void);
 		void						manageTimeout(void);
 	// Attributes
@@ -71,8 +71,8 @@ class Manager
 		fd_set						_errset;
 };
 
-void	*ft_memset(void *s, int c, size_t n);
-void	sigint_handler(int sig);
-void	sigquit_handler(int sig);
+std::string	asciiart(void);
+void		sig_handler(int sig);
+void		*ft_memset(void *s, int c, size_t n);
 
 #endif

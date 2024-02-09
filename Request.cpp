@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/02/08 11:10:16 by apayen           ###   ########.fr       */
+/*   Updated: 2024/02/09 11:24:50 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,8 +17,8 @@
 // Constructors and Destructor
 Request::Request(Client &cl) : _client(cl), _inparse(true), _inprocess(false), \
 	_inerror(true), _inbuild(false), _inwrite(false), _fdfile(-1), _contentlength(0), \
-	_maxcontentlength(-1), _get(true), _post(true), _del(true), _autoindex(false), _redirected(0) \
-{ }
+	_maxcontentlength(-1), _get(true), _post(true), _del(true), _autoindex(false), \
+	_redirected(0) { }
 
 Request::~Request(void) { }
 
@@ -349,17 +349,15 @@ std::string	Request::del(void)
 
 std::string	Request::create(void)
 {
+	std::string	cmd;
+	std::string	dir;
 
+	dir = this->_filepath.substr(0, this->_filepath.find_last_of('/'));
+	cmd = "mkdir -p -m 755 " + dir;
 	if (access(this->_filepath.c_str(), F_OK) != -1)
 		return ("409 Conflict");
-	std::string	cmd;
-	cmd = "mkdir -p -m 755 " + this->_filepath.substr(0, this->_filepath.find_last_of('/'));
-	if (std::system(cmd.c_str()) != 0)
-	{
-		std::cout << this->_filepath << std::endl;
-		std::cout << strerror(errno) << std::endl;
-		return ("500 Internal Server Error...");
-	}
+	if (access(dir.c_str(), F_OK) == -1 && std::system(cmd.c_str()) != 0 && errno != EEXIST)
+			return ("500 Internal Server Error...");
 	errno = 0;
 	this->_fdfile = open(this->_filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
 	if (errno)
@@ -373,11 +371,7 @@ std::string	Request::create(void)
 		else if (errno == EMFILE || errno == ENFILE || errno == ENOMEM || errno == ENOSPC)
 			return ("503 Service Unavailable");
 		else
-		{
-			std::cout << this->_filepath << std::endl;
-			std::cout << strerror(errno) << std::endl;
 			return ("500 Internal Server Error");
-		}
 	}
 	return ("102 Processing");
 }
@@ -590,7 +584,7 @@ std::string	Request::getMime(void)
 		i++;
 	if (i < 67)
 		return (mime[i]);
-	return ("text/html");
+	return ("text/plain");
 }
 
 void	Request::clear(void)
