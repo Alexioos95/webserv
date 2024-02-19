@@ -71,8 +71,8 @@ class Manager
 		fd_set						_errset;
 };
 
-std::string	asciiart(void);
-void		sig_handler(int sig);
-void		*ft_memset(void *s, int c, size_t n);
+void			sig_handler(int sig);
+void			*ft_memset(void *s, int c, size_t n);
+std::string		asciiart(void);
 
 #endif

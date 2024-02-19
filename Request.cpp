@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/02/09 11:24:50 by apayen           ###   ########.fr       */
+/*   Updated: 2024/02/19 12:39:25 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,11 @@ Request::Request(Client &cl) : _client(cl), _inparse(true), _inprocess(false), \
 	_maxcontentlength(-1), _get(true), _post(true), _del(true), _autoindex(false), \
 	_redirected(0) { }
 
-Request::~Request(void) { }
+Request::~Request(void)
+{
+	if (this->_fdfile != -1)
+		close (this->_fdfile);
+}
 
 //////////////////////////////
 // Functions: public
@@ -157,7 +161,7 @@ void	Request::fillBody(size_t pos, int bytes)
 	std::string	crlf;
 
 	crlf = "\r\n\r\n";
-	if (this->_request.find("\r\n\r\n") != std::string::npos)
+	if (this->_request.find(crlf) != std::string::npos)
 	{
 		this->_body.insert(this->_body.end(), this->_request.begin(), this->_request.begin() + pos + 4);
 		this->_request.erase(0, pos + 4);
@@ -327,7 +331,11 @@ std::string	Request::openf(void)
 			return ("500 Internal Server Error");
 	}
 	if (stat(this->_filepath.c_str(), &this->_stat) == -1)
+	{
+		close(this->_fdfile);
+		this->_fdfile = -1;
 		return ("500 Internal Server Error");
+	}
 	return ("102 Processing");
 }
 
@@ -386,6 +394,7 @@ std::string	Request::get(void)
 	{
 		this->_bodyresponse.erase(this->_bodyresponse.begin(), this->_bodyresponse.end());
 		close(this->_fdfile);
+		this->_fdfile = -1;
 		return ("500 Internal Server Error");
 	}
 	this->_bodyresponse.insert(this->_bodyresponse.end(), &buffer[0], &buffer[bytes]);
@@ -394,6 +403,7 @@ std::string	Request::get(void)
 	if (bytes < 4096)
 	{
 		close(this->_fdfile);
+		this->_fdfile = -1;
 		return ("200 OK");
 	}
 	return ("102 Processing");
@@ -414,11 +424,13 @@ std::string	Request::post(void)
 	if (bytes <= 0)
 	{
 		close(this->_fdfile);
+		this->_fdfile = -1;
 		return ("500 Internal Server Error");
 	}
 	if (i == len)
 	{
 		close(this->_fdfile);
+		this->_fdfile = -1;
 		return ("202 Created");
 	}
 	return ("102 Processing");

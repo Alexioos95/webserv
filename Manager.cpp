@@ -92,7 +92,7 @@ void	Manager::defaultconfig(void)
 		// Post			(pair)
 		// Return		(pair)
 		// Alias		(pair)
-	Location	l1("/", true, false, false,	\
+	Location	l1("/", true, true, true,	\
 		false,	\
 		false,	\
 		std::pair<bool, std::string>(true, "/html/index.html"),	\
@@ -116,7 +116,7 @@ void	Manager::defaultconfig(void)
 		std::pair<bool, std::string>(false, ""),	\
 		std::pair<bool, std::string>(false, ""));
 
-	Location	l4("/images/", true, false, false,	\
+	Location	l4("/images", true, false, false,	\
 		false,	\
 		false,	\
 		std::pair<bool, std::string>(false, ""),	\
@@ -140,11 +140,19 @@ void	Manager::defaultconfig(void)
 		std::pair<bool, std::string>(false, ""),	\
 		std::pair<bool, std::string>(false, ""));
 
-	Location	l7("/bla", true, true, true,	\
+	Location	l7("/img", true, false, false,	\
 		false,	\
 		false,	\
 		std::pair<bool, std::string>(false, ""),	\
-		std::pair<bool, std::string>(true, "/yikes"),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""));
+
+	Location	l8("/js", true, false, false,	\
+		false,	\
+		false,	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""),	\
 		std::pair<bool, std::string>(false, ""),	\
 		std::pair<bool, std::string>(false, ""));
 
@@ -154,8 +162,9 @@ void	Manager::defaultconfig(void)
 	loc1.push_back(l4);
 	loc1.push_back(l5);
 	loc1.push_back(l6);
-	loc1.push_back(l7);
 	Server	tmp("test.com", "./qr", vec, err1, loc1, 99999, this->_sockets);
+	loc2.push_back(l7);
+	loc2.push_back(l8);
 	Server	tmp2("netpractice.net", "./np/", vec2, err2, loc2, 99999, this->_sockets);
 	this->_servs.push_back(tmp);
 	this->_servs.push_back(tmp2);
@@ -295,7 +304,7 @@ void	Manager::acceptClient(int fdsock, int port)
 	fd = accept(fdsock, 0, 0);
 	if (fd == -1)
 	{
-		std::cerr << "[!] Failed to accept a new client on port " << port << ":" << strerror(errno) << "\n" << std::endl;
+		std::cerr << "[!] Failed to accept a new client on port " << port << ": " << strerror(errno) << "\n" << std::endl;
 		errno = 0;
 		return ;
 	}

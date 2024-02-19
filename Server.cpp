@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:38:00 by apayen            #+#    #+#             */
-/*   Updated: 2024/02/09 11:20:31 by apayen           ###   ########.fr       */
+/*   Updated: 2024/02/09 13:33:32 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,9 +16,10 @@
 // Constructors and Destructor
 Server::Server(void) { }
 
-Server::Server(std::string name, std::string root, std::vector<int> ports, std::map<std::string, std::string> errors, \
-	std::vector<Location> locations, int bodymax, std::map<int, int> &m) \
-	: _name(name), _root(root), _errors(errors), _locations(locations), _bodymax(bodymax)
+Server::Server(std::string name, std::string root, std::vector<int> ports, \
+	std::map<std::string, std::string> errors, std::vector<Location> locations, \
+	int bodymax, std::map<int, int> &m) : _name(name), _root(root), _errors(errors), \
+	_locations(locations), _bodymax(bodymax)
 {
 	size_t						i;
 	size_t						err;
