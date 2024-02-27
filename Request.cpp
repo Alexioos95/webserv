@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/02/19 12:39:25 by apayen           ###   ########.fr       */
+/*   Updated: 2024/02/27 09:36:46 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,11 +61,25 @@ int	Request::writer(void)
 		this->_status = this->parse();
 		if (this->_status == "102 Processing")
 		{
-			if (this->_method == "GET")
+			if (this->_autoindex)
+			{
+				std::string tmp;
+
+				if (autoindex(this->_dir.c_str(), tmp))
+				{
+					this->_bodyresponse.insert(this->_bodyresponse.end(), tmp.begin(), tmp.end());
+					this->_contentlength = this->_bodyresponse.size();
+					this->_stat.st_mtime = std::time(0);
+					this->_status = "200 OK";
+				}
+				else
+					this->_status = "500 Internal Server Error";
+			}
+			else if (this->_method == "GET")
 				this->_status = this->openf();
-			if (this->_method == "DELETE")
+			else if (this->_method == "DELETE")
 				this->_status = this->del();
-			if (this->_method == "POST")
+			else if (this->_method == "POST")
 				this->_status = this->create();
 			errno = 0;
 		}
@@ -90,12 +104,7 @@ int	Request::writer(void)
 		{
 			std::string tmp;
 
-			if (this->_autoindex)
-			{
-				// Do AutoIndex;
-				this->_stat.st_mtime = std::time(0);
-			}
-			else if (this->_status != "301 Moved Permanently")
+			if (this->_status != "301 Moved Permanently")
 				tmp = this->error();
 			if (tmp != "102 Processing")
 			{
@@ -277,6 +286,7 @@ std::string	Request::checkLocation(void)
 	errno = 0;
 	if (S_ISDIR(st.st_mode))
 	{
+		this->_dir = "Servers/" + this->_serv.getRoot() + '/' + this->_filename;
 		if (l.getIndex().first)
 		{
 			this->_filename = l.getIndex().second;
@@ -365,7 +375,7 @@ std::string	Request::create(void)
 	if (access(this->_filepath.c_str(), F_OK) != -1)
 		return ("409 Conflict");
 	if (access(dir.c_str(), F_OK) == -1 && std::system(cmd.c_str()) != 0 && errno != EEXIST)
-			return ("500 Internal Server Error...");
+		return ("500 Internal Server Error");
 	errno = 0;
 	this->_fdfile = open(this->_filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
 	if (errno)
@@ -442,6 +452,7 @@ std::string	Request::error(void)
 	{
 		std::map<std::string, std::string>				m;
 		std::map<std::string, std::string>::iterator	it;
+		std::string										tmp;
 		std::string										root;
 		std::string										error;
 
@@ -455,8 +466,12 @@ std::string	Request::error(void)
 			{
 				root = this->_serv.getRoot();
 				this->_filepath = "Servers/" + root + '/' + (*it).second;
-				if (this->openf() != "102 Processing")
+				tmp = this->openf();
+				if (tmp != "102 Processing")
+				{
+					this->_status = tmp;
 					it = m.end();
+				}
 				break ;
 			}
 			it++;
@@ -465,12 +480,15 @@ std::string	Request::error(void)
 		{
 			std::string	r;
 
-			r = r + "<!DOCTYPE html>\n<html style=\"height:100%;\"lang=\"en\">\n\t<head>\n\t\t<meta charset=\"UTF-8\">\n\t\t";
-			r = r + "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n\t\t";
-			r = r + "<meta http-equiv=\"X-UA-Compatible\" content=\"ie=edge\">\n\t\t";
-			r = r + "<title>" + this->_status.substr(0, 3) + "</title>\n\t</head>\n";
-			r = r + "\t<body style=\"height:100\%;display:flex;align-items:center;justify-content:center;\">\n\t\t";
-			r = r + "<main>\n\t\t\t\t<h1 style=\"font-size:5em;\">" + this->_status.substr(0, 3) + "</h1>\n\t\t</main>\n\t</body>\n</html>";
+			r = r + "<!DOCTYPE html>\n<html lang=\"en\" style=\"width: 100\%;height: 100%;margin: 0; font-family: \'Press Start 2P\', cursive; background: url(\"matrix.gif\")\">\n";
+			r = r + "\t<head>\n\t\t<meta charset=\"UTF-8\">\n\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n";
+			r = r + "\t\t<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n\t\t<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n";
+			r = r + "\t\t<link href=\"https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap\" rel=\"stylesheet\">\n\t\t<title>" + this->_status + "</title>\n";
+			r = r + "\t\t<style>@keyframes blink { 0% { opacity: 0; } 49% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 1; } }</style>\n";
+			r = r + "\t</head>\n\t<body style=\"width: 100%;height: 100%;margin: 0;\">\n\t\t<main style=\"padding: 1rem;background: black;display: flex;";
+			r = r + "height: 100\%;justify-content: center;align-items: center; color: #54FE55;text-shadow: 0px 0px 10px;font-size: 6rem;flex-direction: column;box-sizing: border-box\">\n";
+			r = r + "\t\t\t<div>" + this->_status.substr(0, 3) + "<span style=\"animation-name: blink;animation-duration: 1s;animation-iteration-count: infinite;\">_</span></div>\n";
+			r = r + "\t\t</main>\n\t</body>\n</html>";
 			this->_bodyresponse.insert(this->_bodyresponse.end(), r.begin(), r.end());
 			this->_stat.st_mtime = std::time(0);
 			this->_contentlength = this->_bodyresponse.size();
@@ -496,7 +514,7 @@ void	Request::buildResponse(void)
 	{
 		str = str + "Last-Modified: " + this->getTime(this->_stat.st_mtime) + "\r\n";
 		str = str + "Content-Length: " + itoa(this->_contentlength) + "\r\n";
-		if (this->_status == "200 OK")
+		if (this->_status == "200 OK" && this->_dir.empty())
 			str = str + "Content-Type: " + this->getMime() + "\r\n";
 		else
 			str = str + "Content-Type: text/html\r\n";
@@ -626,6 +644,7 @@ void	Request::clear(void)
 	this->_get = true;
 	this->_post = true;
 	this->_del = true;
+	this->_dir = "";
 	this->_autoindex = false;
 	this->_redirect = "";
 	this->_redirected = 0;

@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/04 14:35:24 by apayen            #+#    #+#             */
-/*   Updated: 2024/02/19 12:21:37 by apayen           ###   ########.fr       */
+/*   Updated: 2024/02/19 16:21:16 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,6 +47,36 @@ std::string	itoa(int nbi)
 		nbi = nbi / 10;
 	}
 	return (nb);
+}
+
+int	autoindex(const char *directory_name, std::string &res) {
+	DIR* directory = opendir(directory_name);
+	std::string fullPath;
+	res = "<!DOCTYPE html>\n<html lang=\"fr\">\n\t<head>\n\t<meta charset=\"UTF-8\">\n\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\t<title>Index des fichiers</title>\n\t</head>\n<body>\n\t<body>\n\t\t<ul>\n</html>";
+	struct dirent *entry;
+	if (directory == NULL) {
+		std::cerr << "error open" << std::endl;
+		return (0);
+	}
+	while ((entry = readdir(directory)) != NULL)
+	{
+		if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
+		{
+			fullPath = std::string(directory_name) + "/" + entry->d_name;
+			std::string	en(entry->d_name);
+			struct stat fileStat;
+			if (stat(fullPath.c_str(), &fileStat) != -1)
+			{
+				if (S_ISDIR(fileStat.st_mode))
+					res+="\t\t\t<li><a href=\"" + en + "\"> " + en + " </a></li>\n";
+				else
+					res+="\t\t\t<li><a href=\"" + en + "\"> " + en + " </a></li>\n";
+			}
+		}
+	}
+	res += "\t\t</ul>\n\t</body>";
+	closedir(directory);
+	return (1);
 }
 
 std::string	asciiart(void)

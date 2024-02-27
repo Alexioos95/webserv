@@ -85,14 +85,14 @@ void	Manager::defaultconfig(void)
 	err1.insert(std::pair<std::string, std::string>("404", "/error_page/404.html"));
 	std::vector<Location>	loc1;
 	std::vector<Location>	loc2;
-					// Methods - Get, Post, Delete (bools)
+		// Methods - Get, Post, Delete (bools)
 		// CGI			(bool)
 		// Autoindex	(bool)
 		// Index		(pair)
 		// Post			(pair)
 		// Return		(pair)
 		// Alias		(pair)
-	Location	l1("/", true, true, true,	\
+	Location	l1("/", true, false, false,	\
 		false,	\
 		false,	\
 		std::pair<bool, std::string>(true, "/html/index.html"),	\
@@ -162,7 +162,7 @@ void	Manager::defaultconfig(void)
 	loc1.push_back(l4);
 	loc1.push_back(l5);
 	loc1.push_back(l6);
-	Server	tmp("test.com", "./qr", vec, err1, loc1, 99999, this->_sockets);
+	Server	tmp("qr.code", "./qr", vec, err1, loc1, 99999, this->_sockets);
 	loc2.push_back(l7);
 	loc2.push_back(l8);
 	Server	tmp2("netpractice.net", "./np/", vec2, err2, loc2, 99999, this->_sockets);

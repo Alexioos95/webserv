@@ -21,8 +21,10 @@
 # include <fstream>			// fstream
 # include <string.h>		// strerror
 # include <signal.h>		// signal
+# include <dirent.h>		// opendir
 # include <iostream>		// cout/cerr
 # include <exception>		// exceptions
+# include <sys/stat.h>		// stat
 # include <arpa/inet.h>		// functions HostTONetwork
 # include <sys/socket.h>	// sockets
 # include <netinet/in.h>	// struct sockaddr_in

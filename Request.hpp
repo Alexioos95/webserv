@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/02/08 09:16:15 by apayen           ###   ########.fr       */
+/*   Updated: 2024/02/19 16:02:20 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,6 +69,7 @@ class Request
 		bool								_get;
 		bool								_post;
 		bool								_del;
+		std::string							_dir;
 		bool								_autoindex;
 		std::string							_redirect;
 		int									_redirected;
@@ -97,5 +98,6 @@ class Request
 
 void		*ft_memset(void *s, int c, size_t n);
 std::string	itoa(int nbi);
+int			autoindex(const char *directory_name, std::string &res);
 
 #endif
