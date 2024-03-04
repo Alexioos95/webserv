@@ -79,12 +79,18 @@ void	Manager::defaultconfig(void)
 	vec2.push_back(8090);
 	vec2.push_back(8091);
 	vec2.push_back(8092);
+	std::vector<int>	vec3;
+	vec3.push_back(9000);
+	vec3.push_back(9001);
+	vec3.push_back(9002);
 	std::map<std::string, std::string>	err1;
 	std::map<std::string, std::string>	err2;
+	std::map<std::string, std::string>	err3;
 	err1.insert(std::pair<std::string, std::string>("403", "/error_page/403.html"));
 	err1.insert(std::pair<std::string, std::string>("404", "/error_page/404.html"));
 	std::vector<Location>	loc1;
 	std::vector<Location>	loc2;
+	std::vector<Location>	loc3;
 		// Methods - Get, Post, Delete (bools)
 		// CGI			(bool)
 		// Autoindex	(bool)
@@ -156,18 +162,38 @@ void	Manager::defaultconfig(void)
 		std::pair<bool, std::string>(false, ""),	\
 		std::pair<bool, std::string>(false, ""));
 
+	Location	l9("/", true, false, false,	\
+		false,	\
+		false,	\
+		std::pair<bool, std::string>(true, "/index.html"),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""));
+
+	Location	l10("/upload", true, true, true,	\
+		false,	\
+		false,	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(true, "/download"),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""));
+
 	loc1.push_back(l1);
 	loc1.push_back(l2);
 	loc1.push_back(l3);
 	loc1.push_back(l4);
 	loc1.push_back(l5);
 	loc1.push_back(l6);
-	Server	tmp("qr.code", "./qr", vec, err1, loc1, 99999, this->_sockets);
 	loc2.push_back(l7);
 	loc2.push_back(l8);
-	Server	tmp2("netpractice.net", "./np/", vec2, err2, loc2, 99999, this->_sockets);
-	this->_servs.push_back(tmp);
-	this->_servs.push_back(tmp2);
+	loc3.push_back(l9);
+	loc3.push_back(l10);
+	Server	s1("qr.code", "./qr", vec, err1, loc1, 99999, this->_sockets);
+	Server	s2("netpractice.net", "./np/", vec2, err2, loc2, 99999, this->_sockets);
+	Server	s3("form.org", "./form/", vec3, err3, loc3, 99999, this->_sockets);
+	this->_servs.push_back(s1);
+	this->_servs.push_back(s2);
+	this->_servs.push_back(s3);
 	std::cout << std::endl;
 }
 

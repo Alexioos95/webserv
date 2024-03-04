@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/04 14:35:24 by apayen            #+#    #+#             */
-/*   Updated: 2024/02/19 16:21:16 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/04 12:33:50 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,4 +89,24 @@ std::string	asciiart(void)
 	ret = ret + "     | | | | |_  | | ' | _| > , <  | |     | | | | \\_/ | _|\\_/\n";
 	ret = ret + "     |_| |_|___| |_|\\__|___/_/ \\_\\ |_|     |_| |_|_| |_|___(_)\n";
 	return (ret);
+}
+
+void	printvector(std::vector<char> v, int minus)
+{
+	std::vector<char>::iterator	it;
+	std::string					tmp;
+	int							i;
+	int							j;
+
+	it = v.begin();
+	i = 0;
+	j = v.size() - minus;
+	while (i < j)
+	{
+		tmp = *it + '\0';
+		std::cout << tmp;
+		i++;
+		it++;
+	}
+	std::cout << std::endl;
 }
