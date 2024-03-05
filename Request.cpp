@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/04 15:25:53 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/05 10:44:28 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,8 +39,8 @@ int	Request::reader(void)
 	bytes = recv(this->_client.getFD(), buffer, 2048, 0);
 	if (bytes <= 0)
 		return (bytes);
-	this->_request.insert(this->_request.end(), buffer, buffer + bytes);
 	crlf = "\r\n\r\n";
+	this->_request.insert(this->_request.end(), &buffer[0], &buffer[bytes]);
 	pos = std::search(this->_request.begin(), this->_request.end(), crlf.begin(), crlf.end());
 	if (!this->_multi && (pos == this->_request.end() || this->_contentlength + bytes < this->_maxcontentlength))
 		return (bytes);
@@ -59,27 +59,29 @@ int	Request::writer(void)
 		this->_status = this->parse();
 		if (this->_status == "102 Processing")
 		{
-			if (this->_autoindex)
+			if (this->_method == "GET")
 			{
-				std::string tmp;
-
-				if (autoindex(this->_dir.c_str(), tmp))
+				if (this->_autoindex)
 				{
-					this->_bodyresponse.insert(this->_bodyresponse.end(), tmp.begin(), tmp.end());
-					this->_contentlength = this->_bodyresponse.size();
-					this->_stat.st_mtime = std::time(0);
-					this->_status = "200 OK";
+					std::string tmp;
+
+					if (autoindex(this->_dir.c_str(), tmp))
+					{
+						this->_bodyresponse.insert(this->_bodyresponse.end(), tmp.begin(), tmp.end());
+						this->_contentlength = this->_bodyresponse.size();
+						this->_stat.st_mtime = std::time(0);
+						this->_status = "200 OK";
+					}
+					else
+						this->_status = "500 Internal Server Error";
 				}
 				else
-					this->_status = "500 Internal Server Error";
+					this->_status = this->openf();
 			}
-			else if (this->_method == "GET")
-				this->_status = this->openf();
 			else if (this->_method == "DELETE")
 				this->_status = this->del();
 			else if (this->_method == "POST" && !this->_multi)
 				this->_status = this->create();
-			errno = 0;
 		}
 		this->_inparse = false;
 		this->_inprocess = true;
@@ -149,23 +151,22 @@ int	Request::writer(void)
 void	Request::fillHeader(std::vector<char>::iterator pos, int bytes)
 {
 	std::vector<char>::iterator	it;
-	std::string					contentl;
+	std::string					contentlen;
 	std::string					crlf;
 	std::string					crlf2;
-	std::string					nb;
 	std::string					multi;
 	std::string					bound;
+	std::string					nb;
 
-	contentl = "Content-Length: ";
+	contentlen = "Content-Length: ";
 	crlf = "\r\n";
 	crlf2 = "\r\n\r\n";
 	multi = "Content-Type: multipart/form-data";
 	bound = "boundary=";
 	this->_header.insert(this->_header.end(), this->_request.begin(), pos + 4);
 	this->_request.erase(this->_request.begin(), pos + 4);
-	std::cout << "[*] Header of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n";
-	printvector(this->_header, 2);
-	pos = std::search(this->_header.begin(), this->_header.end(), contentl.begin(), contentl.end());
+	std::cout << "[*] Header of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n"; printvector(this->_header, 2);
+	pos = std::search(this->_header.begin(), this->_header.end(), contentlen.begin(), contentlen.end());
 	if (pos == this->_header.end())
 	{
 		this->_client.setToRead(false);
@@ -224,41 +225,37 @@ void	Request::fillBody(std::vector<char>::iterator pos, int bytes)
 		return ;
 	else
 	{
-		std::vector<char>::iterator			it;
-		std::vector<char>::iterator			ite;
-		std::string							head;
 		std::string							crlf;
 		std::string							crlf2;
 		std::string							filename;
-		std::string							bound_begin;
-		std::string							bound_end;
-		std::string							body;
-		std::string							line;
+		std::string							bound;
+		std::vector<char>::iterator			it;
+		std::vector<char>::iterator			ite;
 		std::string							name;
 		std::vector<char>					content;
 
 		crlf = "\r\n";
 		crlf2 = "\r\n\r\n";
 		filename = "filename=\"";
-		bound_begin = "--" + this->_boundary;
+		bound = "--" + this->_boundary;
 		while (1)
 		{
-			it = std::search(this->_request.begin(), this->_request.end(), bound_begin.begin(), bound_begin.end());
+			it = std::search(this->_request.begin(), this->_request.end(), bound.begin(), bound.end());
 			if (it == this->_request.end())
 				break ;
-			this->_request.erase(this->_request.begin(), (it + bound_begin.length() + 2));
+			this->_request.erase(this->_request.begin(), (it + bound.length() + 2));
 			it = std::search(this->_request.begin(), this->_request.end(), filename.begin(), filename.end());
 			if (it == this->_request.end())
 				break ;
 			ite = std::search(it, this->_request.end(), crlf.begin(), crlf.end());
-			if (it == this->_request.end())
+			if (ite == this->_request.end())
 				break ;
 			name = std::string(it + 10, ite - 1);
 			it = std::search(this->_request.begin(), this->_request.end(), crlf2.begin(), crlf2.end());
 			if (it == this->_request.end())
 				break ;
 			this->_request.erase(this->_request.begin(), it + 4);
-			it = std::search(this->_request.begin(), this->_request.end(), bound_begin.begin(), bound_begin.end());
+			it = std::search(this->_request.begin(), this->_request.end(), bound.begin(), bound.end());
 			if (it == this->_request.end())
 				break ;
 			content.insert(content.end(), this->_request.begin(), it - 4);
@@ -280,7 +277,7 @@ std::string	Request::parse(void)
 	std::vector<char>::iterator		it;
 	std::vector<char>::iterator		ite;
 	std::string						crlf;
-	std::string						contentl;
+	std::string						contentlen;
 	std::string						connection;
 	std::string						line;
 	std::string						root;
@@ -288,7 +285,7 @@ std::string	Request::parse(void)
 	std::string						length;
 
 	crlf = "\r\n";
-	contentl = "Content-Length: ";
+	contentlen = "Content-Length: ";
 	connection = "Connection: keep-alive";
 	it = std::search(this->_header.begin(), this->_header.end(), crlf.begin(), crlf.end());
 	line = std::string(this->_header.begin(), it);
@@ -311,12 +308,12 @@ std::string	Request::parse(void)
 	version = line.substr((this->_method.length() + pos), (line.find("\r\n") - (this->_method.length() + pos + 1)));
 	if (version != "HTTP/1.1")
 		return ("505 HTTP Version not supported");
-	it = std::search(this->_header.begin(), this->_header.end(), contentl.begin(), contentl.end());
+	it = std::search(this->_header.begin(), this->_header.end(), contentlen.begin(), contentlen.end());
 	if (it != this->_header.end())
 	{
 		if (this->_method == "DELETE")
 			return ("400 Bad Request");
-		it = std::search(this->_header.begin(), this->_header.end(), contentl.begin(), contentl.end());
+		it = std::search(this->_header.begin(), this->_header.end(), contentlen.begin(), contentlen.end());
 		ite = std::search(it, this->_header.end(), crlf.begin(), crlf.end());
 		length = std::string(it + 16, ite);
 		if (this->_serv.getBodymax() < std::atoi(length.c_str()))
@@ -339,8 +336,8 @@ bool	Request::searchServ()
 	std::string					host;
 	std::string					port;
 
-	host = "Host: ";
 	crlf = "\r\n";
+	host = "Host: ";
 	it = std::search(this->_header.begin(), this->_header.end(), host.begin(), host.end());
 	if (it == this->_header.end())
 		return (false);
@@ -381,21 +378,23 @@ std::string	Request::checkLocation(void)
 		this->_filename.replace(this->_filename.find(l.getPath()), l.getPath().length(), l.getAlias().second);
 		this->_filepath = "Servers/" + this->_serv.getRoot() + '/' + this->_filename;
 	}
-	if (stat(this->_filepath.c_str(), &st) == -1 && errno != ENOENT)
-		return ("500 Internal Server Error");
-	errno = 0;
-	if (S_ISDIR(st.st_mode))
+	if (this->_method == "GET")
 	{
-		this->_dir = "Servers/" + this->_serv.getRoot() + '/' + this->_filename;
-		if (l.getIndex().first)
+		if (stat(this->_filepath.c_str(), &st) == -1 && errno != ENOENT)
+			return ("500 Internal Server Error");
+		if (S_ISDIR(st.st_mode))
 		{
-			this->_filename = l.getIndex().second;
-			this->_filepath = "Servers/" + this->_serv.getRoot() + '/' + this->_filename;
+			this->_dir = "Servers/" + this->_serv.getRoot() + '/' + this->_filename;
+			if (l.getIndex().first)
+			{
+				this->_filename = l.getIndex().second;
+				this->_filepath = "Servers/" + this->_serv.getRoot() + '/' + this->_filename;
+			}
+			else if (l.allowAutoindex())
+				this->_autoindex = true;
+			else
+				return ("403 Forbidden");
 		}
-		else if (l.allowAutoindex())
-			this->_autoindex = true;
-		else
-			return ("403 Forbidden");
 	}
 	if (l.getReturn().first)
 	{
@@ -425,23 +424,28 @@ std::string	Request::openf(void)
 	this->_fdfile = open(this->_filepath.c_str(), O_RDONLY);
 	if (errno)
 	{
+		std::string	status;
+
 		if (errno == ELOOP)
-			return ("310 Too many Redirects");
+			status = "310 Too many Redirects";
 		else if (errno == EACCES)
-			return ("403 Forbidden");
+			status = "403 Forbidden";
 		else if (errno == ENOENT || errno == EFAULT || errno == ENODEV)
-			return ("404 Not Found");
+			status = "404 Not Found";
 		else if (errno == EFBIG)
-			return ("413 Request Entity Too Large");
+			status = "413 Request Entity Too Large";
 		else if (errno == ENAMETOOLONG)
-			return ("414 Request-URI Too Long");
+			status = "414 Request-URI Too Long";
 		else if (errno == EMFILE || errno == ENFILE || errno == ENOMEM || errno == ENOSPC)
-			return ("503 Service Unavailable");
+			status = "503 Service Unavailable";
 		else
-			return ("500 Internal Server Error");
+			status = "500 Internal Server Error";
+		errno = 0;
+		return (status);
 	}
 	if (stat(this->_filepath.c_str(), &this->_stat) == -1)
 	{
+		errno = 0;
 		close(this->_fdfile);
 		this->_fdfile = -1;
 		return ("500 Internal Server Error");
@@ -451,8 +455,8 @@ std::string	Request::openf(void)
 
 std::string	Request::del(void)
 {
-	std::string	dir;
 	const char	*str;
+	std::string	dir;
 
 	str = this->_filepath.c_str();
 	dir = this->_filepath.substr(0, this->_filepath.find_last_of("/") + 1);
@@ -467,29 +471,37 @@ std::string	Request::del(void)
 
 std::string	Request::create(void)
 {
-	std::string	cmd;
 	std::string	dir;
+	std::string	cmd;
+	std::string	status;
 
 	dir = this->_filepath.substr(0, this->_filepath.find_last_of('/'));
 	cmd = "mkdir -p -m 755 " + dir;
 	if (access(this->_filepath.c_str(), F_OK) != -1)
+	{
+		errno = 0;
 		return ("409 Conflict");
+	}
 	if (access(dir.c_str(), F_OK) == -1 && std::system(cmd.c_str()) != 0 && errno != EEXIST)
+	{
+		errno = 0;
 		return ("500 Internal Server Error");
-	errno = 0;
+	}
 	this->_fdfile = open(this->_filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
 	if (errno)
 	{
 		if (errno == ELOOP)
-			return ("310 Too many Redirects");
+			status = "310 Too many Redirects";
 		else if (errno == EACCES)
-			return ("403 Forbidden");
+			status = "403 Forbidden";
 		else if (errno == ENAMETOOLONG)
-			return ("414 Request-URI Too Long");
+			status = "414 Request-URI Too Long";
 		else if (errno == EMFILE || errno == ENFILE || errno == ENOMEM || errno == ENOSPC)
-			return ("503 Service Unavailable");
+			status = "503 Service Unavailable";
 		else
-			return ("500 Internal Server Error");
+			status = "500 Internal Server Error";
+		errno = 0;
+		return (status);
 	}
 	return ("102 Processing");
 }
@@ -502,9 +514,9 @@ std::string	Request::get(void)
 	bytes = read(this->_fdfile, buffer, 4096);
 	if (bytes < 0)
 	{
-		this->_bodyresponse.erase(this->_bodyresponse.begin(), this->_bodyresponse.end());
 		close(this->_fdfile);
 		this->_fdfile = -1;
+		this->_bodyresponse.erase(this->_bodyresponse.begin(), this->_bodyresponse.end());
 		return ("500 Internal Server Error");
 	}
 	this->_bodyresponse.insert(this->_bodyresponse.end(), &buffer[0], &buffer[bytes]);
@@ -575,10 +587,10 @@ std::string	Request::multipost(void)
 			break ;
 		}
 	}
+	std::vector<std::pair<std::string, std::vector<char> > >::iterator	it;
 	size_t																i;
 	size_t																len;
 	ssize_t																bytes;
-	std::vector<std::pair<std::string, std::vector<char> > >::iterator	it;
 
 	it = this->_files.begin();
 	len = (*it).second.size();
@@ -600,7 +612,7 @@ std::string	Request::multipost(void)
 		this->_fdfile = -1;
 		this->_files.erase(this->_files.begin());
 		if (this->_files.empty())
-			return ("202 Created");
+			return ("200 OK");
 		return ("102 Processing");
 	}
 	return ("102 Processing");
@@ -640,15 +652,18 @@ std::string	Request::error(void)
 		{
 			std::string	r;
 
-			r = r + "<!DOCTYPE html>\n<html lang=\"en\" style=\"width: 100\%;height: 100%;margin: 0; font-family: \'Press Start 2P\', cursive; background: url(\"matrix.gif\")\">\n";
+			r = r + "<!DOCTYPE html>\n<html lang=\"en\" style=\"width: 100\%;height: 100%;margin: 0; font-family: 'Press Start 2P', cursive; background: url(\"matrix.gif\")\">\n";
 			r = r + "\t<head>\n\t\t<meta charset=\"UTF-8\">\n\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n";
 			r = r + "\t\t<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n\t\t<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n";
-			r = r + "\t\t<link href=\"https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap\" rel=\"stylesheet\">\n\t\t<title>" + this->_status + "</title>\n";
-			r = r + "\t\t<style>@keyframes blink { 0% { opacity: 0; } 49% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 1; } }</style>\n";
-			r = r + "\t</head>\n\t<body style=\"width: 100%;height: 100%;margin: 0;\">\n\t\t<main style=\"padding: 1rem;background: black;display: flex;";
-			r = r + "height: 100\%;justify-content: center;align-items: center; color: #54FE55;text-shadow: 0px 0px 10px;font-size: 6rem;flex-direction: column;box-sizing: border-box\">\n";
-			r = r + "\t\t\t<div>" + this->_status.substr(0, 3) + "<span style=\"animation-name: blink;animation-duration: 1s;animation-iteration-count: infinite;\">_</span></div>\n";
-			r = r + "\t\t</main>\n\t</body>\n</html>";
+			r = r + "\t\t<link href=\"https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap\" rel=\"stylesheet\">\n";
+			r = r + "\t\t<title>" + this->_status + "</title>\n\t\t<style>\n\t\t\t@keyframes blink { 0% { opacity: 0; } 49% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 1; } }\n";
+			r = r + "\t\t\t@keyframes type { from { width: 0px } to { width: 302px } }\n\t\t</style>\n\t</head>\n";
+			r = r + "\t<body style=\"width: 100\%;height: 100%;margin: 0;\">\n\t\t<main style=\"background: black;display: flex; height: 100%; justify-content: center; align-items: center;";
+			r = r + " color: #54FE55; text-shadow: 0px 0px 10px; font-size: 6rem; box-sizing: border-box\">\n\t\t\t<div style=\"width: 484px; display: flex; gap: 10px;\">\n";
+			r = r + "\t\t\t\t<h1 style=\"font-size: 1em; margin: 0; height: 84px; letter-spacing: 10px; max-width: 302px; white-space: nowrap; overflow: hidden; width: 0;";
+			r = r + " animation: type 1s steps(3, end) forwards;\">" + this->_status.substr(0, 3) + "</h1>\n\t\t\t\t<div style=\"border-bottom: 0.15em solid #54FE55; height: 86px;";
+			r = r + " width: 93px; animation-name: blink; animation-duration: 1s; animation-iteration-count: infinite; animation-delay: 1.5s\"></div>\n";
+			r = r + "\t\t\t</div>\n\t\t</main>\n\t</body>\n</html>";
 			this->_bodyresponse.insert(this->_bodyresponse.end(), r.begin(), r.end());
 			this->_stat.st_mtime = std::time(0);
 			this->_contentlength = this->_bodyresponse.size();
