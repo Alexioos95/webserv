@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/05 10:44:28 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/05 11:05:11 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -258,7 +258,7 @@ void	Request::fillBody(std::vector<char>::iterator pos, int bytes)
 			it = std::search(this->_request.begin(), this->_request.end(), bound.begin(), bound.end());
 			if (it == this->_request.end())
 				break ;
-			content.insert(content.end(), this->_request.begin(), it - 4);
+			content.insert(content.end(), this->_request.begin(), it - 3);
 			this->_files.push_back(std::pair<std::string, std::vector<char> >(name, content));
 			content.erase(content.begin(), content.end());
 			this->_request.erase(this->_request.begin(), it);
@@ -457,14 +457,16 @@ std::string	Request::del(void)
 {
 	const char	*str;
 	std::string	dir;
+	std::string	cmd;
 
 	str = this->_filepath.c_str();
 	dir = this->_filepath.substr(0, this->_filepath.find_last_of("/") + 1);
+	cmd = "rm -rf " + this->_filepath;
 	if (access(str, F_OK) == -1)
 		return ("404 Not Found");
 	else if (access(dir.c_str(), W_OK | X_OK) == -1)
 		return ("403 Forbidden");
-	if (std::remove(str) != 0)
+	if (std::system(cmd.c_str()) != 0)
 		return ("500 Internal Server Error");
 	return ("200 OK");
 }

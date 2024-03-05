@@ -170,11 +170,19 @@ void	Manager::defaultconfig(void)
 		std::pair<bool, std::string>(false, ""),	\
 		std::pair<bool, std::string>(false, ""));
 
-	Location	l10("/upload", true, true, true,	\
+	Location	l10("/upload", false, true, false,	\
 		false,	\
 		false,	\
 		std::pair<bool, std::string>(false, ""),	\
 		std::pair<bool, std::string>(true, "/download"),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""));
+
+	Location	l11("/download", true, true, true,	\
+		false,	\
+		true,	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""),	\
 		std::pair<bool, std::string>(false, ""),	\
 		std::pair<bool, std::string>(false, ""));
 
@@ -188,6 +196,7 @@ void	Manager::defaultconfig(void)
 	loc2.push_back(l8);
 	loc3.push_back(l9);
 	loc3.push_back(l10);
+	loc3.push_back(l11);
 	Server	s1("qr.code", "./qr", vec, err1, loc1, 99999, this->_sockets);
 	Server	s2("netpractice.net", "./np/", vec2, err2, loc2, 99999, this->_sockets);
 	Server	s3("form.org", "./form/", vec3, err3, loc3, 99999, this->_sockets);
