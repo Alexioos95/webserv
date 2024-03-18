@@ -1,0 +1,6 @@
+server {
+  server_name abcdef;
+  listen 8080;
+  root /np/;
+  body_size 500;
+}
