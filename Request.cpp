@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/05 11:05:11 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/18 14:50:09 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -88,14 +88,14 @@ int	Request::writer(void)
 	}
 	if (this->_inprocess)
 	{
-		if (this->_multi)
-		{
-			this->_status = this->multipost();
-			if (this->_status == "102 Processing")
-				return (1);
-		}
 		if (this->_status == "102 Processing")
 		{
+			if (this->_multi)
+			{
+				this->_status = this->multipost();
+				if (this->_status == "102 Processing")
+					return (1);
+			}
 			if (this->_method == "GET")
 				this->_status = this->get();
 			else if (this->_method == "POST" && !this->_multi)
@@ -124,6 +124,7 @@ int	Request::writer(void)
 		this->buildResponse();
 		this->_inbuild = false;
 		this->_inwrite = true;
+		return (1);
 	}
 	if (this->_inwrite)
 	{
@@ -359,19 +360,25 @@ std::string	Request::checkLocation(void)
 {
 	Location 	l;
 	struct stat st;
+	std::string	status;
 
+	status = "102 Processing";
 	ft_memset(&st, 0, sizeof(st));
 	l = this->_serv.getLocation(this->_filename);
 	if (!l.allowMethod(this->_method, this->_get, this->_post, this->_del))
 		return ("405 Method Not Allowed");
-	if (this->_method == "POST" && l.getDirPost().first)
+	if (this->_method == "POST")
 	{
-		if (this->_multi)
-			this->_filename = l.getDirPost().second + '/';
+		if (l.getDirPost().first)
+		{
+			if (this->_multi)
+				this->_filename = l.getDirPost().second + '/';
+			else
+				this->_filename = l.getDirPost().second + '/' + this->_filename;
+		}
 		else
-			this->_filename = l.getDirPost().second + '/' + this->_filename;
+			this->_filename.resize(this->_filename.find_last_of('/'));
 		this->_filepath = "Servers/" + this->_serv.getRoot() + '/' + this->_filename;
-		return ("102 Processing");
 	}
 	if (l.getAlias().first)
 	{
@@ -393,17 +400,17 @@ std::string	Request::checkLocation(void)
 			else if (l.allowAutoindex())
 				this->_autoindex = true;
 			else
-				return ("403 Forbidden");
+				status = "403 Forbidden";
 		}
 	}
 	if (l.getReturn().first)
 	{
 		this->_filename = l.getReturn().second;
 		if (this->simulateRedirect(this->_filename) == -1)
-			return ("310 Too many Redirects");
-		return ("301 Moved Permanently");
+			status = "310 Too many Redirects";
+		status = "301 Moved Permanently";
 	}
-	return ("102 Processing");
+	return (status);
 }
 
 int	Request::simulateRedirect(std::string path)
@@ -562,6 +569,10 @@ std::string	Request::post(void)
 
 std::string	Request::multipost(void)
 {
+	std::vector<std::pair<std::string, std::vector<char> > >::iterator	it;
+	size_t																i;
+	size_t																len;
+	ssize_t																bytes;
 	if (this->_fdfile == -1)
 	{
 		std::vector<std::pair<std::string, std::vector<char> > >::iterator	it;
@@ -589,11 +600,6 @@ std::string	Request::multipost(void)
 			break ;
 		}
 	}
-	std::vector<std::pair<std::string, std::vector<char> > >::iterator	it;
-	size_t																i;
-	size_t																len;
-	ssize_t																bytes;
-
 	it = this->_files.begin();
 	len = (*it).second.size();
 	i = len;
@@ -660,7 +666,7 @@ std::string	Request::error(void)
 			r = r + "\t\t<link href=\"https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap\" rel=\"stylesheet\">\n";
 			r = r + "\t\t<title>" + this->_status + "</title>\n\t\t<style>\n\t\t\t@keyframes blink { 0% { opacity: 0; } 49% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 1; } }\n";
 			r = r + "\t\t\t@keyframes type { from { width: 0px } to { width: 302px } }\n\t\t</style>\n\t</head>\n";
-			r = r + "\t<body style=\"width: 100\%;height: 100%;margin: 0;\">\n\t\t<main style=\"background: black;display: flex; height: 100%; justify-content: center; align-items: center;";
+			r = r + "\t<body style=\"width: 100\%;height: 100%;margin: 0;\">\n\t\t<main style=\"background: black;display: height: 100%; justify-content: center; align-items: center;";
 			r = r + " color: #54FE55; text-shadow: 0px 0px 10px; font-size: 6rem; box-sizing: border-box\">\n\t\t\t<div style=\"width: 484px; display: flex; gap: 10px;\">\n";
 			r = r + "\t\t\t\t<h1 style=\"font-size: 1em; margin: 0; height: 84px; letter-spacing: 10px; max-width: 302px; white-space: nowrap; overflow: hidden; width: 0;";
 			r = r + " animation: type 1s steps(3, end) forwards;\">" + this->_status.substr(0, 3) + "</h1>\n\t\t\t\t<div style=\"border-bottom: 0.15em solid #54FE55; height: 86px;";
@@ -686,12 +692,32 @@ void	Request::buildResponse(void)
 		str = str + "Location: " + this->_filename + "\r\n";
 	else if (this->_status == "405 Method Not Allowed" && !this->getMethods().empty())
 		str = str + "Allow: " + this->getMethods() + "\r\n";
-	if ((this->_method == "GET" && this->_status == "200 OK") \
+	if (this->_method == "POST" && this->_status == "200 OK")
+	{
+		std::string	r;
+
+		r = r + "<!DOCTYPE html>\n<html lang=\"en\" style=\"width: 100\%;height: 100%;margin: 0; font-family: 'Press Start 2P', cursive; background: url(\"matrix.gif\")\">\n";
+		r = r + "\t<head>\n\t\t<meta charset=\"UTF-8\">\n\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n";
+		r = r + "\t\t<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n\t\t<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n";
+		r = r + "\t\t<link href=\"https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap\" rel=\"stylesheet\">\n";
+		r = r + "\t\t<title>POST Succesfull</title>\n\t\t<style>\n\t\t\t@keyframes blink { 0% { opacity: 0; } 49% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 1; } }\n";
+		r = r + "\t\t\t@keyframes type { from { width: 0px } to { width: 302px } }\n\t\t</style>\n\t</head>\n";
+		r = r + "\t<body style=\"width: 100\%;height: 100%;margin: 0;\">\n\t\t<main style=\"background: black;display: flex; height: 100%; justify-content: center; align-items: center;";
+		r = r + " color: #54FE55; text-shadow: 0px 0px 10px; font-size: 6rem; box-sizing: border-box\">\n\t\t\t<div style=\"width: 484px; display: flex; gap: 10px;\">\n";
+		r = r + "\t\t\t\t<h1 style=\"font-size: 1em; margin: 0; height: 84px; letter-spacing: 10px; max-width: 302px; white-space: nowrap; overflow: hidden; width: 0;";
+		r = r + " animation: type 1s steps(3, end) forwards;\">200</h1>\n\t\t\t\t<div style=\"border-bottom: 0.15em solid #54FE55; height: 86px;";
+		r = r + " width: 93px; animation-name: blink; animation-duration: 1s; animation-iteration-count: infinite; animation-delay: 1.5s\"></div>\n";
+		r = r + "\t\t\t</div>\n\t\t</main>\n\t</body>\n</html>";
+		this->_bodyresponse.insert(this->_bodyresponse.end(), r.begin(), r.end());
+		this->_stat.st_mtime = std::time(0);
+		this->_contentlength = this->_bodyresponse.size();
+	}
+	if ((this->_method != "DELETE" && this->_status == "200 OK") \
 		|| (this->_status != "200 OK" && this->_status != "202 Created" && this->_status != "301 Moved Permanently"))
 	{
 		str = str + "Last-Modified: " + this->getTime(this->_stat.st_mtime) + "\r\n";
 		str = str + "Content-Length: " + itoa(this->_contentlength) + "\r\n";
-		if (this->_status == "200 OK" && this->_dir.empty())
+		if (this->_method != "POST" && this->_status == "200 OK" && this->_dir.empty())
 			str = str + "Content-Type: " + this->getMime() + "\r\n";
 		else
 			str = str + "Content-Type: text/html\r\n";
