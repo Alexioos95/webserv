@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/04 14:43:57 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/18 15:33:23 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@
 
 # include "Manager.hpp"
 # include "Server.hpp"
+# include "Cgi.hpp"
 
 class Request
 {
