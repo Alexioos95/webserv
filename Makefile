@@ -6,7 +6,7 @@
 #    By: apayen <apayen@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/10/17 14:41:49 by apayen            #+#    #+#              #
-#    Updated: 2024/02/09 10:19:32 by apayen           ###   ########.fr        #
+#    Updated: 2024/03/05 13:20:02 by apayen           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -46,6 +46,7 @@ fclean : 	clean
 			$(RM) $(NAME)
 
 re :		fclean
+			$(RM) ./Servers/form/download
 			make all
 
 -include $(DEP)

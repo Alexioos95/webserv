@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Manager.cpp                                      :+:      :+:    :+:   */
+/*   Manager.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/12/12 09:38:00 by apayen            #+#    #+#             */
-/*   Updated: 2024/01/10 08:51:22 by apayen           ###   ########.fr       */
+/*   Created: 2024/03/18 12:20:04 by apayen            #+#    #+#             */
+/*   Updated: 2024/03/18 12:51:05 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -166,15 +166,31 @@ void	Manager::defaultconfig(void)
 		false,	\
 		false,	\
 		std::pair<bool, std::string>(true, "/index.html"),	\
-		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(true, "/download"),	\
 		std::pair<bool, std::string>(false, ""),	\
 		std::pair<bool, std::string>(false, ""));
 
-	Location	l10("/upload", true, true, true,	\
+	Location	l10("/index.html", true, true, true,	\
 		false,	\
 		false,	\
 		std::pair<bool, std::string>(false, ""),	\
 		std::pair<bool, std::string>(true, "/download"),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""));
+
+	Location	l11("/upload", false, true, false,	\
+		false,	\
+		false,	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(true, "/download"),	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""));
+
+	Location	l12("/download", true, true, true,	\
+		false,	\
+		true,	\
+		std::pair<bool, std::string>(false, ""),	\
+		std::pair<bool, std::string>(false, ""),	\
 		std::pair<bool, std::string>(false, ""),	\
 		std::pair<bool, std::string>(false, ""));
 
@@ -188,6 +204,8 @@ void	Manager::defaultconfig(void)
 	loc2.push_back(l8);
 	loc3.push_back(l9);
 	loc3.push_back(l10);
+	loc3.push_back(l11);
+	loc3.push_back(l12);
 	Server	s1("qr.code", "./qr", vec, err1, loc1, 99999, this->_sockets);
 	Server	s2("netpractice.net", "./np/", vec2, err2, loc2, 99999, this->_sockets);
 	Server	s3("form.org", "./form/", vec3, err3, loc3, 99999, this->_sockets);
