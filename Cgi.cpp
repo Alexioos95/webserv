@@ -63,7 +63,6 @@ Cgi &Cgi::operator=(const Cgi &rhs)
 
 Cgi::~Cgi()
 {
-	std::cerr<<"destruct pid == "<<_pid<<std::endl;
 	if (_pid > 0)
 		kill(_pid, SIGKILL);
 	if (_pipeIn[0] > 0)
@@ -98,22 +97,20 @@ void Cgi::launchCgi(const std::string &f)
 	cgiType = checkEnd(f.c_str(), ".php") ? PHP : checkEnd(f.c_str(), ".ruby") ? RUBY : ERROR;
 	if (cgiType == ERROR)
 		throw std::invalid_argument("only php and ruby are handdled");
-	std::cerr<<"pid == "<<_pid<<std::endl;
 	if (_pipeIn[1] > 0)
 	{
 		close(_pipeIn[1]);
 		_pipeIn[1] = -2;
 	}
 	_pid = fork();
-	std::cerr<<"pid == "<<_pid<<std::endl;
 	if (_pid == 0)
 	{
 		if (_pipeOut[0] > -1)
 			close(_pipeOut[0]);
 		if (_pipeIn[1] > -1)
 			close(_pipeIn[1]);
-		std::cerr<<"in == "<<dup2(_pipeIn[0], STDIN_FILENO)<<std::endl;
-		std::cerr<<"out == "<<dup2(_pipeOut[1], STDOUT_FILENO)<<std::endl;
+		dup2(_pipeIn[0], STDIN_FILENO);
+		dup2(_pipeOut[1], STDOUT_FILENO);
 		if (_pipeIn[0] > -1)
 			close(_pipeIn[0]);
 		if (_pipeOut[1] > -1)
