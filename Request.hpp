@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/18 15:33:23 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/19 09:53:04 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -70,6 +70,8 @@ class Request
 		bool														_multi;
 		std::string													_boundary;
 		std::vector<std::pair<std::string, std::vector<char> > >	_files;
+		bool														_iscgi;
+		Cgi															*_cgi;
 		// Location
 		bool														_get;
 		bool														_post;

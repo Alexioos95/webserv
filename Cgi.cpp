@@ -48,8 +48,11 @@ Cgi &Cgi::operator=(const Cgi &rhs)
 		_pipeOut[0] =rhs._pipeOut[0];
 		_pipeOut[1] =rhs._pipeOut[0];
 		int size;
-		for (size = 0; rhs._env[size];size++);
-		delete (this->_env);
+		size = 0;
+		if (rhs._env)
+			for (size = 0; rhs._env[size];size++);
+		if (this->_env)
+			delete (this->_env);
 		_env = new char*[(size + 1) * sizeof(char *)];
 		for (i = 0; i < size; i++)
 			_env[i] = rhs._env[i];

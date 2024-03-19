@@ -60,16 +60,16 @@ function getLogged($test)
 		</div>
 		</body>
 		</html>';
-		$header = "HTTP/1.1 200; Content-Type: text/html; charset=utf-8; ";
-		if (!empty($test))
-		{
-			$cookie = explode('&', $test);
-			$header .= "Set-Cookie: ";
-			$header .= "test=".$cookie[0] . ";";
-			$header .= " expire=";
-			$header .= time() + 30 . " ";
-		}
-		$header .= "Content-Length: " . strlen($body) . "\n";
+		$header = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\ncharset=utf-8\r\n";
+		// if (!empty($test))
+		// {
+		// 	$cookie = explode('&', $test);
+		// 	$header .= "Set-Cookie: ";
+		// 	$header .= "test=".$cookie[0] . ";";
+		// 	$header .= " expire=";
+		// 	$header .= time() + 30 . " ";
+		// }
+		$header .= "Content-Length: " . strlen($body) . "\r\n\r\n";
 		return ($header.$body);
 	}
 }
@@ -138,7 +138,7 @@ function getIndex($ARG=0)
 	</div>
 	</body>
 	</html>';
-	$header = "HTTP/1.1 200; Content-Type: text/html; charset=utf-8; ";
+	$header = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\ncharset=utf-8\r\n\r\n";
 	$header .= " Content-Length: " . strlen($body) . "\n";
 	return ($header.$body."\n");
 }

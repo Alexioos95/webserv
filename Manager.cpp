@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/18 12:20:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/18 12:51:05 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/19 08:58:32 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -163,7 +163,7 @@ void	Manager::defaultconfig(void)
 		std::pair<bool, std::string>(false, ""));
 
 	Location	l9("/", true, false, false,	\
-		false,	\
+		true,	\
 		false,	\
 		std::pair<bool, std::string>(true, "/index.html"),	\
 		std::pair<bool, std::string>(true, "/download"),	\

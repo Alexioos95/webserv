@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/18 14:50:09 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/19 10:20:30 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,13 +17,15 @@
 // Constructors and Destructor
 Request::Request(Client &cl) : _client(cl), _inparse(true), _inprocess(false), \
 	_inerror(true), _inbuild(false), _inwrite(false), _fdfile(-1), _contentlength(0), \
-	_maxcontentlength(-1), _multi(false), _get(true), _post(true), _del(true), _autoindex(false), \
-	_redirected(0) { }
+	_maxcontentlength(-1), _multi(false), _iscgi(false), _cgi(NULL), _get(true), _post(true), \
+	_del(true), _autoindex(false), _redirected(0) { }
 
 Request::~Request(void)
 {
 	if (this->_fdfile != -1)
 		close (this->_fdfile);
+	if (this->_cgi != NULL)
+		delete (this->_cgi);
 }
 
 //////////////////////////////
@@ -59,7 +61,24 @@ int	Request::writer(void)
 		this->_status = this->parse();
 		if (this->_status == "102 Processing")
 		{
-			if (this->_method == "GET")
+			if (this->_iscgi)
+			{
+				try
+				{
+					this->_cgi = new Cgi;
+					std::string					env;
+					std::vector<Cgi>::iterator	it;
+
+					// Do env.
+					this->_cgi->launchCgi(this->_filepath);
+				}
+				catch (const std::exception &e)
+				{
+					std::cerr << "[-] Couldn't start CGI for client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n" << std::endl;
+					this->_status = "500 Internal Server Error";
+				}
+			}
+			else if (this->_method == "GET")
 			{
 				if (this->_autoindex)
 				{
@@ -90,13 +109,38 @@ int	Request::writer(void)
 	{
 		if (this->_status == "102 Processing")
 		{
-			if (this->_multi)
+			if (this->_iscgi)
+			{
+
+				char			buffer[4096];
+				ssize_t			bytes;
+
+				waitpid(this->_cgi->getPid(), NULL, WNOHANG);
+				bytes = read(this->_cgi->getFdRead(), buffer, 4096);
+				if (bytes < 0)
+				{
+					this->_response.erase(this->_response.begin(), this->_response.end());
+					this->_status = "500 Internal Server Error";
+				}
+				else
+				{
+					this->_response.insert(this->_response.end(), &buffer[0], &buffer[bytes]);
+					printvector(this->_response, 0);
+					if (bytes < 4096)
+					{
+						this->_inprocess = false;
+						this->_inwrite = true;
+					}
+					return (1);
+				}
+			}
+			else if (this->_multi)
 			{
 				this->_status = this->multipost();
 				if (this->_status == "102 Processing")
 					return (1);
 			}
-			if (this->_method == "GET")
+			else if (this->_method == "GET")
 				this->_status = this->get();
 			else if (this->_method == "POST" && !this->_multi)
 				this->_status = this->post();
@@ -367,6 +411,13 @@ std::string	Request::checkLocation(void)
 	l = this->_serv.getLocation(this->_filename);
 	if (!l.allowMethod(this->_method, this->_get, this->_post, this->_del))
 		return ("405 Method Not Allowed");
+	if (this->_filename.find_last_of(".php") == this->_filename.length() - 1)
+	{
+		if (!l.allowCgi() || this->_method == "DELETE")
+			return ("403 Forbiddden");
+		else
+			this->_iscgi = true;
+	}
 	if (this->_method == "POST")
 	{
 		if (l.getDirPost().first)
@@ -666,7 +717,7 @@ std::string	Request::error(void)
 			r = r + "\t\t<link href=\"https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap\" rel=\"stylesheet\">\n";
 			r = r + "\t\t<title>" + this->_status + "</title>\n\t\t<style>\n\t\t\t@keyframes blink { 0% { opacity: 0; } 49% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 1; } }\n";
 			r = r + "\t\t\t@keyframes type { from { width: 0px } to { width: 302px } }\n\t\t</style>\n\t</head>\n";
-			r = r + "\t<body style=\"width: 100\%;height: 100%;margin: 0;\">\n\t\t<main style=\"background: black;display: height: 100%; justify-content: center; align-items: center;";
+			r = r + "\t<body style=\"width: 100\%;height: 100%;margin: 0;\">\n\t\t<main style=\"background: black; display: flex; height: 100%; justify-content: center; align-items: center;";
 			r = r + " color: #54FE55; text-shadow: 0px 0px 10px; font-size: 6rem; box-sizing: border-box\">\n\t\t\t<div style=\"width: 484px; display: flex; gap: 10px;\">\n";
 			r = r + "\t\t\t\t<h1 style=\"font-size: 1em; margin: 0; height: 84px; letter-spacing: 10px; max-width: 302px; white-space: nowrap; overflow: hidden; width: 0;";
 			r = r + " animation: type 1s steps(3, end) forwards;\">" + this->_status.substr(0, 3) + "</h1>\n\t\t\t\t<div style=\"border-bottom: 0.15em solid #54FE55; height: 86px;";
@@ -847,9 +898,7 @@ void	Request::clear(void)
 	this->_multi = false;
 	this->_boundary = "";
 	this->_files.erase(this->_files.begin(), this->_files.end());
-	this->_get = true;
-	this->_post = true;
-	this->_del = true;
+	this->_iscgi = false;
 	this->_dir = "";
 	this->_autoindex = false;
 	this->_redirect = "";
