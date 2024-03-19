@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/19 14:13:48 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/19 15:54:57 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -77,52 +77,8 @@ int	Request::processing(void)
 	{
 		if (this->_iscgi)
 		{
-			try
-			{
-				char						buffer[4096];
-				ssize_t						bytes;
-				std::vector<char>::iterator	it;
-				std::vector<std::string>	s;
-
-				if (this->_cgi == NULL)
-				{
-					s.push_back("HTTP_COOKIE=" + this->_cookie);
-					this->_cgi = new Cgi(*this->_client.getManager(), s);
-				}
-				bytes = this->_body.size();
-				if (bytes >= 4096)
-					bytes = 4096;
-				if (!this->_body.empty() && write(this->_cgi->getFdWrite(), this->_body.data(), bytes) <= 0)
-				{
-					this->_body.erase(this->_body.begin(), this->_body.begin() + bytes);
-					this->_status = "500 Internal Server Error";
-					return (1);
-				}
-				// Do env.
-				this->_cgi->launchCgi(this->_filepath);
-				waitpid(this->_cgi->getPid(), NULL, WNOHANG);
-				bytes = read(this->_cgi->getFdRead(), buffer, 4096);
-				if (bytes < 0)
-				{
-					this->_response.erase(this->_response.begin(), this->_response.end());
-					this->_status = "500 Internal Server Error";
-				}
-				else
-				{
-					this->_response.insert(this->_response.end(), &buffer[0], &buffer[bytes]);
-					if (bytes < 4096)
-					{
-						this->_inprocess = false;
-						this->_inwrite = true;
-					}
-					return (1);
-				}
-			}
-			catch (const std::exception &e)
-			{
-				std::cerr << "[-] Couldn't start CGI for client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n" << std::endl;
-				this->_status = "500 Internal Server Error";
-			}
+			this->processCGI();
+			return (1);
 		}
 		else if (this->_multi)
 		{
@@ -153,6 +109,54 @@ int	Request::processing(void)
 		}
 	}
 	return (0);
+}
+
+void	Request::processCGI(void)
+{
+	try
+	{
+		char						buffer[4096];
+		ssize_t						bytes;
+		std::vector<char>::iterator	it;
+		std::vector<std::string>	s;
+
+		if (this->_cgi == NULL)
+		{
+			s.push_back("HTTP_COOKIE=" + this->_cookie);
+			this->_cgi = new Cgi(*this->_client.getManager(), s);
+		}
+		bytes = this->_body.size();
+		if (bytes >= 4096)
+			bytes = 4096;
+		if (!this->_body.empty() && write(this->_cgi->getFdWrite(), this->_body.data(), bytes) <= 0)
+		{
+			this->_body.erase(this->_body.begin(), this->_body.begin() + bytes);
+			this->_status = "500 Internal Server Error";
+			return ;
+		}
+		this->_cgi->launchCgi(this->_filepath);
+		waitpid(this->_cgi->getPid(), NULL, WNOHANG);
+		bytes = read(this->_cgi->getFdRead(), buffer, 4096);
+		if (bytes < 0)
+		{
+			this->_response.erase(this->_response.begin(), this->_response.end());
+			this->_status = "500 Internal Server Error";
+		}
+		else
+		{
+			this->_response.insert(this->_response.end(), &buffer[0], &buffer[bytes]);
+			if (bytes < 4096)
+			{
+				this->_inprocess = false;
+				this->_inwrite = true;
+			}
+		}
+	}
+	catch (const std::exception &e)
+	{
+		std::cerr << "[-] Couldn't start CGI for client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n" << std::endl;
+		this->_status = "500 Internal Server Error";
+	}
 }
 
 int	Request::writing(void)

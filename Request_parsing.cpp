@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 11:15:58 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/19 14:12:33 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/19 15:55:35 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,8 @@
 #define	CONNECTION "Connection: keep-alive"
 #define COOKIE "Cookie: "
 
+//////////////////////////////
+// Function: writer - parser
 std::string	Request::parse(void)
 {
 	size_t							pos;

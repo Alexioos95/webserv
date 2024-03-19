@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/19 11:28:44 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/19 15:55:51 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ Request::~Request(void)
 }
 
 //////////////////////////////
-// Functions: writer - Process
+// Functions: writer - process
 std::string	Request::openf(void)
 {
 	this->_fdfile = open(this->_filepath.c_str(), O_RDONLY);

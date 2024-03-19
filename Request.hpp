@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/19 14:05:01 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/19 15:53:33 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -93,6 +93,7 @@ class Request
 		// States
 		void														parsing(void);
 		int															processing(void);
+		void														processCGI(void);
 		int															writing(void);
 		// Methods
 		std::string													openf(void);
