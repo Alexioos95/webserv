@@ -1,0 +1,163 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Request_reader.cpp                                 :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/03/19 11:14:12 by apayen            #+#    #+#             */
+/*   Updated: 2024/03/19 11:24:08 by apayen           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "Request.hpp"
+#include "Client.hpp"
+
+//////////////////////////////
+// Function: reader
+int	Request::reader(void)
+{
+	char						buffer[2048 + 1];
+	int							bytes;
+	std::string					crlf;
+	std::vector<char>::iterator	pos;
+
+	ft_memset(buffer, 0, 2048 + 1);
+	bytes = recv(this->_client.getFD(), buffer, 2048, 0);
+	if (bytes <= 0)
+		return (bytes);
+	crlf = "\r\n\r\n";
+	this->_request.insert(this->_request.end(), &buffer[0], &buffer[bytes]);
+	pos = std::search(this->_request.begin(), this->_request.end(), crlf.begin(), crlf.end());
+	if (!this->_multi && (pos == this->_request.end() || this->_contentlength + bytes < this->_maxcontentlength))
+		return (bytes);
+	if (std::search(this->_header.begin(), this->_header.end(), crlf.begin(), crlf.end()) == this->_header.end())
+		this->fillHeader(pos, bytes);
+	else
+		this->fillBody(pos, bytes);
+	return (bytes);
+}
+
+void	Request::fillHeader(std::vector<char>::iterator pos, int bytes)
+{
+	std::vector<char>::iterator	it;
+	std::string					contentlen;
+	std::string					crlf;
+	std::string					crlf2;
+	std::string					multi;
+	std::string					bound;
+	std::string					nb;
+
+	contentlen = "Content-Length: ";
+	crlf = "\r\n";
+	crlf2 = "\r\n\r\n";
+	multi = "Content-Type: multipart/form-data";
+	bound = "boundary=";
+	this->_header.insert(this->_header.end(), this->_request.begin(), pos + 4);
+	this->_request.erase(this->_request.begin(), pos + 4);
+	std::cout << "[*] Header of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n"; printvector(this->_header, 2);
+	pos = std::search(this->_header.begin(), this->_header.end(), contentlen.begin(), contentlen.end());
+	if (pos == this->_header.end())
+	{
+		this->_client.setToRead(false);
+		return ;
+	}
+	it = std::search(pos + 16, this->_header.end(), crlf.begin(), crlf.end());
+	nb = std::string(pos + 16, it);
+	this->_maxcontentlength = std::atoi(nb.c_str());
+	pos = std::search(this->_header.begin(), this->_header.end(), multi.begin(), multi.end());
+	if (pos != this->_header.end())
+	{
+		std::vector<char>::iterator	it;
+
+		this->_multi = true;
+		pos = std::search(pos, this->_header.end(), bound.begin(), bound.end());
+		it = std::search(pos + 10, this->_header.end(), crlf.begin(), crlf.end());
+		std::string	tmp(pos + 10, it);
+		this->_boundary = tmp;
+	}
+	if (!this->_request.empty())
+	{
+		pos = std::search(this->_request.begin(), this->_request.end(), crlf2.begin(), crlf2.end());
+		this->fillBody(pos, bytes);
+	}
+}
+
+void	Request::fillBody(std::vector<char>::iterator pos, int bytes)
+{
+	std::string	crlf;
+
+	crlf = "\r\n\r\n";
+	if (!this->_multi)
+	{
+		if (std::search(this->_request.begin(), this->_request.end(), crlf.begin(), crlf.end()) != this->_request.end())
+		{
+			this->_body.insert(this->_body.end(), this->_request.begin(), pos + 4);
+			this->_request.erase(this->_request.begin(), pos + 4);
+		}
+		else
+		{
+			this->_body.insert(this->_body.end(), this->_request.begin(), this->_request.end());
+			this->_request.erase(this->_request.begin(), this->_request.end());
+		}
+		this->_contentlength = this->_contentlength + bytes;
+		if (this->_contentlength > this->_maxcontentlength)
+			this->_body.resize(this->_maxcontentlength);
+		if (this->_contentlength >= this->_maxcontentlength \
+			|| std::search(this->_body.begin(), this->_body.end(), crlf.begin(), crlf.end()) != this->_body.end())
+		{
+			this->_contentlength = 0;
+			this->_client.setToRead(false);
+		}
+	}
+	else if (this->_request.size() < static_cast<unsigned long>(this->_maxcontentlength) \
+		&& (std::find_end(this->_request.begin(), this->_request.end(), this->_boundary.begin(), this->_boundary.end()) + this->_boundary.length() + 5) != this->_request.end())
+		return ;
+	else
+		this->parseMultiEncoded();
+}
+
+void	Request::parseMultiEncoded(void)
+{
+	std::string							crlf;
+	std::string							crlf2;
+	std::string							filename;
+	std::string							bound;
+	std::vector<char>::iterator			it;
+	std::vector<char>::iterator			ite;
+	std::string							name;
+	std::vector<char>					content;
+
+	crlf = "\r\n";
+	crlf2 = "\r\n\r\n";
+	filename = "filename=\"";
+	bound = "--" + this->_boundary;
+	while (1)
+	{
+		it = std::search(this->_request.begin(), this->_request.end(), bound.begin(), bound.end());
+		if (it == this->_request.end())
+			break ;
+		this->_request.erase(this->_request.begin(), (it + bound.length() + 2));
+		it = std::search(this->_request.begin(), this->_request.end(), filename.begin(), filename.end());
+		if (it == this->_request.end())
+			break ;
+		ite = std::search(it, this->_request.end(), crlf.begin(), crlf.end());
+		if (ite == this->_request.end())
+			break ;
+		name = std::string(it + 10, ite - 1);
+		it = std::search(this->_request.begin(), this->_request.end(), crlf2.begin(), crlf2.end());
+		if (it == this->_request.end())
+			break ;
+		this->_request.erase(this->_request.begin(), it + 4);
+		it = std::search(this->_request.begin(), this->_request.end(), bound.begin(), bound.end());
+		if (it == this->_request.end())
+			break ;
+		content.insert(content.end(), this->_request.begin(), it - 3);
+		this->_files.push_back(std::pair<std::string, std::vector<char> >(name, content));
+		content.erase(content.begin(), content.end());
+		this->_request.erase(this->_request.begin(), it);
+		if (this->_request.size() == 2)
+			break ;
+	}
+	this->_client.setToRead(false);
+}

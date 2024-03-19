@@ -6,7 +6,7 @@
 #    By: apayen <apayen@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/10/17 14:41:49 by apayen            #+#    #+#              #
-#    Updated: 2024/03/18 15:14:03 by apayen           ###   ########.fr        #
+#    Updated: 2024/03/19 11:35:42 by apayen           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -19,6 +19,9 @@ SRC = 	$(addprefix $(DIR)/,	\
 		Server.cpp				\
 		Client.cpp				\
 		Request.cpp				\
+		Request_parsing.cpp		\
+		Request_reader.cpp		\
+		Request_writer.cpp		\
 		Location.cpp			\
 		Cgi.cpp					\
 		utils.cpp)

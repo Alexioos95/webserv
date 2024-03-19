@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/19 09:53:04 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/19 11:29:24 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -85,19 +85,28 @@ class Request
 		std::string													parse(void);
 		void														fillHeader(std::vector<char>::iterator pos, int bytes);
 		void														fillBody(std::vector<char>::iterator pos, int bytes);
+		void														parseMultiEncoded(void);
 		bool														searchServ(void);
 		std::string													checkLocation(void);
 		int															simulateRedirect(std::string path);
+		// States
+		void														parsing(void);
+		int															processing(void);
+		int															writing(void);
 		// Methods
 		std::string													openf(void);
 		std::string													create(void);
 		std::string													multipost(void);
+		void														createFilesMultipost(void);
 		std::string													get(void);
 		std::string													del(void);
 		std::string													post(void);
 		std::string													error(void);
+		void														generateError(void);
 		// Response
 		void														buildResponse(void);
+		void														generateSuccess(void);
+
 		std::string													getMethods(void);
 		std::string													getTime(std::time_t time);
 		std::string													getMime(void);
