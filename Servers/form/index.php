@@ -125,23 +125,34 @@ function getIndex($ARG=0)
 	</style>
 	</head>
 	<body>
-	<div class="container">';
-	if ($ARG)
-		$body .= $ARG;
-	$body .= '<h2>Username</h2>
-	<input type="text" name="username" id="username" placeholder="Entrez votre nom d\'utilisateur">
-
-	<h2>Password</h2>
-	<input type="password" name="password" id="password" placeholder="Entrez votre mot de passe">
-
-	<input type="submit" value="Connexion">
-	</div>
-	</body>
+	<div class="container">
+	<form method="post">
+		<h2>Username</h2>
+		<input type="text" name="username" id="username" placeholder="Entrez votre nom d\'utilisateur">
+	
+		<h2>Password</h2>
+		<input type="password" name="password" id="password" placeholder="Entrez votre mot de passe">
+	
+		<input type="submit" value="Connexion">
+	</form>
+	</div></body>
 	</html>';
-	$header = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\ncharset=utf-8\r\n\r\n";
-	$header .= " Content-Length: " . strlen($body) . "\n";
+	$header = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\ncharset=utf-8\r\n";
+	$header .= " Content-Length: " . strlen($body) . "\r\n\r\n";
 	return ($header.$body."\n");
 }
+
+// <div class="container">';
+	// if ($ARG)
+	// 	$body .= $ARG;
+	// $body .= '<h2>Username</h2>
+	// <input type="text" name="username" id="username" placeholder="Entrez votre nom d\'utilisateur">
+
+	// <h2>Password</h2>
+	// <input type="password" name="password" id="password" placeholder="Entrez votre mot de passe">
+
+	// <input type="submit" value="Connexion">
+	// </div>
 
 function main()
 {
