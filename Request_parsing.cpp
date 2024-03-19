@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 11:15:58 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/19 12:36:00 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/19 14:12:33 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #define	CRLF2 "\r\n\r\n"
 #define	CONTLEN "Content-Length: "
 #define	CONNECTION "Connection: keep-alive"
+#define COOKIE "Cookie: "
 
 std::string	Request::parse(void)
 {
@@ -61,7 +62,13 @@ std::string	Request::parse(void)
 			return ("413 Request Entity Too Large");
 	}
 	else if (this->_method == "POST")
-		return ("400 Bad Request");;
+		return ("400 Bad Request");
+	it = std::search(this->_header.begin(), this->_header.end(), COOKIE, &COOKIE[8]);
+	if (it != this->_header.end())
+	{
+		ite = std::search(it, this->_header.end(), CRLF, &CRLF[2]);
+		this->_cookie = std::string(it + 8, ite);
+	}
 	if (std::search(this->_header.begin(), this->_header.end(), CONNECTION, &CONNECTION[22]) == this->_header.end())
 		this->_client.setKeepAlive(false);
 	else

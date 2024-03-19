@@ -61,14 +61,17 @@ function getLogged($test)
 		</body>
 		</html>';
 		$header = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\ncharset=utf-8\r\n";
-		// if (!empty($test))
-		// {
-		// 	$cookie = explode('&', $test);
-		// 	$header .= "Set-Cookie: ";
-		// 	$header .= "test=".$cookie[0] . ";";
-		// 	$header .= " expire=";
-		// 	$header .= time() + 30 . " ";
-		// }
+		if (!empty($test))
+		{
+			$cookie = explode('&', $test);
+			$header .= "Set-Cookie: ";
+			$header .= "test=".$cookie[0] . "\r\n";
+			$header .= " expire=";
+			$header .= time() + 30 . "\r\n";
+			$header .= "Set-Cookie: test\r\n";
+			$header .= " expire=";
+			$header .= time() + 30 . "\r\n";
+		}
 		$header .= "Content-Length: " . strlen($body) . "\r\n\r\n";
 		return ($header.$body);
 	}
@@ -129,10 +132,10 @@ function getIndex($ARG=0)
 	<form method="post">
 		<h2>Username</h2>
 		<input type="text" name="username" id="username" placeholder="Entrez votre nom d\'utilisateur">
-	
+
 		<h2>Password</h2>
 		<input type="password" name="password" id="password" placeholder="Entrez votre mot de passe">
-	
+
 		<input type="submit" value="Connexion">
 	</form>
 	</div></body>
@@ -156,13 +159,16 @@ function getIndex($ARG=0)
 
 function main()
 {
+	// foreach ($_ENV as $key => $value) {
+	// 	echo "$key : $value <br>";
+	// }
 	$in = file_get_contents('php://stdin');
 	while (!feof(STDIN)) {
 		$in .= fgets(STDIN);
 	}
 	if ($in != '' && $in[strlen($in) - 1] == "\n")
 		$in = substr($in, 0, -1);
-	if (!isset($_ENV["HTTP_COOKIE"]) && $in == '')
+	if (!isset($_ENV["HTTP_COOKIE="]) && $in == '')
 		echo getIndex();
 	else
 		echo getLogged($in);

@@ -1,20 +1,6 @@
 #include "Cgi.hpp"
 
-Cgi::Cgi()
-{
-	_pid = -1;
-	_env = NULL;
-	_pipeIn[0] = -2;
-	_pipeIn[1] = -2;
-	_pipeOut[0] = -2;
-	_pipeOut[1] = -2;
-	if (pipe(_pipeIn) == -1)
-		throw std::runtime_error("cgi : pipe error");
-	if (pipe(_pipeOut) == -1)
-		throw std::runtime_error("cgi : pipe error");
-}
-
-Cgi::Cgi(const std::vector<std::string> &env)
+Cgi::Cgi(Manager &man, const std::vector<std::string> &env) : _man(man)
 {
 	int i = 0;
 	_pid = -1;
@@ -32,49 +18,55 @@ Cgi::Cgi(const std::vector<std::string> &env)
 		throw std::runtime_error("cgi : pipe error");
 }
 
-Cgi::Cgi(const Cgi &cgi) : _env(NULL)
-{
-	*this = cgi;
-}
+// Cgi::Cgi(const Cgi &cgi) : _env(NULL), _man(cgi._man)
+// {
+// 	*this = cgi;
+// }
 
-Cgi &Cgi::operator=(const Cgi &rhs)
-{
-	if (this != &rhs)
-	{
-		int i;
-		_pid = rhs._pid;
-		_pipeIn[0] = rhs._pipeIn[0];
-		_pipeIn[1] = rhs._pipeIn[0];
-		_pipeOut[0] =rhs._pipeOut[0];
-		_pipeOut[1] =rhs._pipeOut[0];
-		int size;
-		size = 0;
-		if (rhs._env)
-			for (size = 0; rhs._env[size];size++);
-		if (this->_env)
-			delete (this->_env);
-		_env = new char*[(size + 1) * sizeof(char *)];
-		for (i = 0; i < size; i++)
-			_env[i] = rhs._env[i];
-		_env[i] = NULL;
-	}
-	return (*this);
-}
+// Cgi &Cgi::operator=(const Cgi &rhs)
+// {
+// 	if (this != &rhs)
+// 	{
+// 		int i;
+// 		_pid = rhs._pid;
+// 		_pipeIn[0] = rhs._pipeIn[0];
+// 		_pipeIn[1] = rhs._pipeIn[0];
+// 		_pipeOut[0] =rhs._pipeOut[0];
+// 		_pipeOut[1] =rhs._pipeOut[0];
+// 		int size;
+// 		size = 0;
+// 		if (rhs._env)
+// 			for (size = 0; rhs._env[size];size++);
+// 		if (this->_env)
+// 			delete (this->_env);
+// 		_env = new char*[(size + 1) * sizeof(char *)];
+// 		for (i = 0; i < size; i++)
+// 			_env[i] = rhs._env[i];
+// 		_env[i] = NULL;
+// 	}
+// 	return (*this);
+// }
 
 Cgi::~Cgi()
 {
 	if (_pid > 0)
+	{
 		kill(_pid, SIGKILL);
+		_pid = -1;
+	}
 	if (_pipeIn[0] > 0)
 		close(_pipeIn[0]);
 	if (_pipeIn[1] > 0)
 		close(_pipeIn[1]);
-
 	if (_pipeOut[0] > 0)
 		close(_pipeOut[0]);
 	if (_pipeOut[1] > 0)
 		close(_pipeOut[1]);
-	delete (_env);
+	if (_env)
+	{
+		delete[] _env;
+		_env = NULL;
+	}
 }
 
 bool checkEnd(const char *a, const char *b)
@@ -105,6 +97,7 @@ void Cgi::launchCgi(const std::string &f)
 	_pid = fork();
 	if (_pid == 0)
 	{
+		_man.shutdown();
 		if (_pipeOut[0] > -1)
 			close(_pipeOut[0]);
 		if (_pipeIn[1] > -1)
@@ -153,24 +146,24 @@ int Cgi::getFdRead()
 	return (_pipeOut[0]);
 }
 
-std::vector<char> Cgi::getOutputCgi()
-{
-	char	buf[2048];
-	int	 readRes;
-	std::vector<char>   res;
-	std::vector<char>::iterator   it;
+// std::vector<char> Cgi::getOutputCgi()
+// {
+// 	char	buf[2048];
+// 	int	 readRes;
+// 	std::vector<char>   res;
+// 	std::vector<char>::iterator   it;
 
-	while ((readRes = read(_pipeOut[0], buf, 2048)) > 0)
-	{
-		for (int i = 0; i < readRes; i++)
-		{
-			res.push_back(buf[i]);
-		}
-	}
-	if (readRes == -1)
-		throw std::runtime_error("cgi : fail to read");
-	return (res);
-}
+// 	while (_pipeOut[0] != -1 && (readRes = read(_pipeOut[0], buf, 2048)) > 0)
+// 	{
+// 		for (int i = 0; i < readRes; i++)
+// 		{
+// 			res.push_back(buf[i]);
+// 		}
+// 	}
+// 	if (readRes == -1)
+// 		throw std::runtime_error("cgi : fail to read");
+// 	return (res);
+// }
 
 int Cgi::getPid()
 {

@@ -11,28 +11,26 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include "Manager.hpp"
 
 enum langage {ERROR, PHP, RUBY};
 enum file {READ, WRITE};
 
 class Cgi{
 	public :
-		Cgi();
-		Cgi(const std::vector<std::string> &);
-		Cgi(const Cgi &cgi);
+		Cgi(Manager &man, const std::vector<std::string> &);
 		~Cgi();
-		Cgi	&operator=(const Cgi &);
 		void	launchCgi(const std::string &);
 		int	getFdWrite();
 		int	getFdRead();
 		int	getPid();
-		std::vector<char> getOutputCgi();
 
 	private :
 		int	_pid;
 		int	_pipeIn[2];
 		int	_pipeOut[2];
 		char	**_env;
+		Manager	&_man;
 };
 
 #endif

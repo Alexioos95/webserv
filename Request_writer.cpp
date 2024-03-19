@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/19 13:10:15 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/19 14:13:48 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -82,9 +82,13 @@ int	Request::processing(void)
 				char						buffer[4096];
 				ssize_t						bytes;
 				std::vector<char>::iterator	it;
+				std::vector<std::string>	s;
 
 				if (this->_cgi == NULL)
-					this->_cgi = new Cgi;
+				{
+					s.push_back("HTTP_COOKIE=" + this->_cookie);
+					this->_cgi = new Cgi(*this->_client.getManager(), s);
+				}
 				bytes = this->_body.size();
 				if (bytes >= 4096)
 					bytes = 4096;

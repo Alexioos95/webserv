@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/19 11:29:24 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/19 14:05:01 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,6 +72,7 @@ class Request
 		std::vector<std::pair<std::string, std::vector<char> > >	_files;
 		bool														_iscgi;
 		Cgi															*_cgi;
+		std::string													_cookie;
 		// Location
 		bool														_get;
 		bool														_post;
