@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 11:15:58 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/19 11:36:42 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/19 12:36:00 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -112,7 +112,7 @@ std::string	Request::checkLocation(void)
 		else
 			this->_iscgi = true;
 	}
-	if (this->_method == "POST")
+	if (this->_method == "POST" && !this->_iscgi)
 	{
 		if (l.getDirPost().first)
 		{
