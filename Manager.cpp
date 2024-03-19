@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Manager.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
+/*   By: madaguen <madaguen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/18 12:20:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/19 08:58:32 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/19 12:18:14 by madaguen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -162,7 +162,7 @@ void	Manager::defaultconfig(void)
 		std::pair<bool, std::string>(false, ""),	\
 		std::pair<bool, std::string>(false, ""));
 
-	Location	l9("/", true, false, false,	\
+	Location	l9("/", true, true, false,	\
 		true,	\
 		false,	\
 		std::pair<bool, std::string>(true, "/index.html"),	\
