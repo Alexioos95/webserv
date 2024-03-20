@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:38:00 by apayen            #+#    #+#             */
-/*   Updated: 2024/02/09 13:33:32 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/20 13:04:58 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,6 +74,7 @@ Server	&Server::operator=(Server const &rhs)
 {
 	if (this != &rhs)
 	{
+		this->_errno = rhs._errno;
 		this->_name = rhs._name;
 		this->_root = rhs._root;
 		this->_ports = rhs._ports;
@@ -151,9 +152,10 @@ bool	Server::bindPort(std::map<int, int> &m, int port)
 	fdsock = socket(AF_INET, SOCK_STREAM, 0);
 	if (fdsock == -1)
 	{
-		std::cerr << "[!] Failed creating socket for port " << port << " for " << this->_name;
-		std::cerr << ": " << strerror(errno) << std::endl;
+		this->_errno = errno;
 		errno = 0;
+		std::cerr << "[!] Failed creating socket for port " << port << " for " << this->_name;
+		std::cerr << ": " << strerror(this->_errno) << std::endl;
 		return (false);
 	}
 	ft_memset(ssock.sin_zero, 0, sizeof(ssock.sin_zero));
@@ -162,9 +164,10 @@ bool	Server::bindPort(std::map<int, int> &m, int port)
 	ssock.sin_port = htons(port);
 	if (bind(fdsock, reinterpret_cast<struct sockaddr *>(&ssock), sizeof(ssock)) == -1)
 	{
-		std::cerr << "[!] Failed binding socket to port " << port << " for " << this->_name << ": " << strerror(errno) << std::endl;
-		close(fdsock);
+		this->_errno = errno;
 		errno = 0;
+		std::cerr << "[!] Failed binding socket to port " << port << " for " << this->_name << ": " << strerror(this->_errno) << std::endl;
+		close(fdsock);
 		return (false);
 	}
 	if (fcntl(fdsock, F_SETFL, O_NONBLOCK, FD_CLOEXEC) == -1)
@@ -177,10 +180,11 @@ bool	Server::bindPort(std::map<int, int> &m, int port)
 	}
 	if (listen(fdsock, SOMAXCONN) == -1)
 	{
-		std::cerr << "[!] Failed to listen on port " << port << " for " << this->_name;
-		std::cerr << ": " << strerror(errno) << std::endl;
-		close(fdsock);
+		this->_errno = errno;
 		errno = 0;
+		std::cerr << "[!] Failed to listen on port " << port << " for " << this->_name;
+		std::cerr << ": " << strerror(this->_errno) << std::endl;
+		close(fdsock);
 		return (false);
 	}
 	m.insert(std::pair<int, int>(port, fdsock));

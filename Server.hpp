@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/12 12:00:43 by apayen            #+#    #+#             */
-/*   Updated: 2024/02/05 13:14:07 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/20 13:03:25 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,6 +49,7 @@ class Server
 	// Functions
 		bool								bindPort(std::map<int, int> &m, int port);
 	// Attributes
+		int									_errno;
 		std::string							_name;
 		std::string							_root;
 		std::vector<int>					_ports;

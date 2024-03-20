@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:41:38 by apayen            #+#    #+#             */
-/*   Updated: 2024/02/09 11:22:45 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/20 12:12:02 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,6 @@ class Client
 	// Overloads
 		Client				&operator=(Client &rhs);
 	// Setters
-		void				setInRequest(bool state);
 		void				setKeepAlive(bool state);
 		void				setToRead(bool state);
 	// Getters
@@ -41,7 +40,6 @@ class Client
 		time_t				getTimer(void) const;
 		// State
 		bool				toRead(void) const;
-		bool				inRequest(void) const;
 		bool				keepAlive(void) const;
 	// Functions
 		void				actualizeTime(void);
@@ -56,7 +54,6 @@ class Client
 		int					_port;
 		time_t				_timer;
 		bool				_toread;
-		bool				_inrequest;
 		bool				_keepalive;
 };
 

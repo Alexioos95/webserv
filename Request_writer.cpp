@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/19 15:54:57 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/20 13:22:04 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,6 @@ int	Request::writer(void)
 
 void	Request::parsing(void)
 {
-	this->_client.setInRequest(true);
 	this->_status = this->parse();
 	if (this->_status == "102 Processing")
 	{
@@ -130,6 +129,7 @@ void	Request::processCGI(void)
 			bytes = 4096;
 		if (!this->_body.empty() && write(this->_cgi->getFdWrite(), this->_body.data(), bytes) <= 0)
 		{
+			errno = 0;
 			this->_body.erase(this->_body.begin(), this->_body.begin() + bytes);
 			this->_status = "500 Internal Server Error";
 			return ;
@@ -139,6 +139,7 @@ void	Request::processCGI(void)
 		bytes = read(this->_cgi->getFdRead(), buffer, 4096);
 		if (bytes < 0)
 		{
+			errno = 0;
 			this->_response.erase(this->_response.begin(), this->_response.end());
 			this->_status = "500 Internal Server Error";
 		}
@@ -154,7 +155,7 @@ void	Request::processCGI(void)
 	}
 	catch (const std::exception &e)
 	{
-		std::cerr << "[-] Couldn't start CGI for client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n" << std::endl;
+		std::cerr << "[-] Couldn't execute a CGI for client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n" << std::endl;
 		this->_status = "500 Internal Server Error";
 	}
 }
@@ -162,15 +163,17 @@ void	Request::processCGI(void)
 int	Request::writing(void)
 {
 	size_t						len;
-	std::vector<char>::iterator	it;
 
 	len = this->_response.size();
 	if (len > 4096)
 		len = 4096;
-	it = this->_response.begin() + len;
 	if (send(this->_client.getFD(), this->_response.data(), len, 0) <= 0)
+	{
+		errno = 0;
+		this->clear();
 		return (-1);
-	this->_response.erase(this->_response.begin(), it);
+	}
+	this->_response.erase(this->_response.begin(), this->_response.begin() + len);
 	if (this->_response.empty())
 	{
 		this->clear();

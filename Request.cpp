@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/19 15:55:51 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/20 13:21:59 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,25 @@ Request::Request(Client &cl) : _client(cl), _inparse(true), _inprocess(false), \
 	_inerror(true), _inbuild(false), _inwrite(false), _fdfile(-1), _contentlength(0), \
 	_maxcontentlength(-1), _multi(false), _iscgi(false), _cgi(NULL), _get(true), _post(true), \
 	_del(true), _autoindex(false), _redirected(0) { }
+
+Request::Request(Request *rhs) : _client(rhs->_client), _serv(rhs->_serv), _inparse(rhs->_inparse), \
+	_inprocess(rhs->_inprocess), _inerror(rhs->_inerror), _inbuild(rhs->_inbuild), _inwrite(rhs->_inwrite), \
+	_status(rhs->_status), _name(rhs->_name), \
+	_method(rhs->_method), _filename(rhs->_filename), _filepath(rhs->_filepath), _fdfile(rhs->_fdfile), \
+	_stat(rhs->_stat), _contentlength(rhs->_contentlength), _maxcontentlength(rhs->_maxcontentlength), \
+	_multi(rhs->_multi), _boundary(rhs->_boundary), _iscgi(rhs->_iscgi), _cgi(rhs->_cgi), \
+	_cookie(rhs->_cookie), _get(rhs->_get), _post(rhs->_post), _del(rhs->_del), _dir(rhs->_dir), \
+	_autoindex(rhs->_autoindex), _redirect(rhs->_redirect), _redirected(rhs->_redirected)
+{
+	this->_request = rhs->_request;
+	this->_header = rhs->_header;
+	this->_body = rhs->_body;
+	this->_headerresponse = rhs->_headerresponse;
+	this->_bodyresponse = rhs->_bodyresponse;
+	this->_response = rhs->_response;
+	this->_files = rhs->_files;
+	delete rhs;
+}
 
 Request::~Request(void)
 {
@@ -33,25 +52,26 @@ Request::~Request(void)
 std::string	Request::openf(void)
 {
 	this->_fdfile = open(this->_filepath.c_str(), O_RDONLY);
-	if (errno)
+	if (this->_fdfile == -1)
 	{
 		std::string	status;
 
-		if (errno == ELOOP)
+		this->_errno = errno;
+		errno = 0;
+		if (this->_errno == ELOOP)
 			status = "310 Too many Redirects";
-		else if (errno == EACCES)
+		else if (this->_errno == EACCES)
 			status = "403 Forbidden";
-		else if (errno == ENOENT || errno == EFAULT || errno == ENODEV)
+		else if (this->_errno == ENOENT || this->_errno == EFAULT || this->_errno == ENODEV)
 			status = "404 Not Found";
-		else if (errno == EFBIG)
+		else if (this->_errno == EFBIG)
 			status = "413 Request Entity Too Large";
-		else if (errno == ENAMETOOLONG)
+		else if (this->_errno == ENAMETOOLONG)
 			status = "414 Request-URI Too Long";
-		else if (errno == EMFILE || errno == ENFILE || errno == ENOMEM || errno == ENOSPC)
+		else if (this->_errno == EMFILE || this->_errno == ENFILE || this->_errno == ENOMEM || this->_errno == ENOSPC)
 			status = "503 Service Unavailable";
 		else
 			status = "500 Internal Server Error";
-		errno = 0;
 		return (status);
 	}
 	if (stat(this->_filepath.c_str(), &this->_stat) == -1)
@@ -101,19 +121,20 @@ std::string	Request::create(void)
 		return ("500 Internal Server Error");
 	}
 	this->_fdfile = open(this->_filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
-	if (errno)
+	if (this->_fdfile == -1)
 	{
-		if (errno == ELOOP)
+		this->_errno = errno;
+		errno = 0;
+		if (this->_errno == ELOOP)
 			status = "310 Too many Redirects";
-		else if (errno == EACCES)
+		else if (this->_errno == EACCES)
 			status = "403 Forbidden";
-		else if (errno == ENAMETOOLONG)
+		else if (this->_errno == ENAMETOOLONG)
 			status = "414 Request-URI Too Long";
-		else if (errno == EMFILE || errno == ENFILE || errno == ENOMEM || errno == ENOSPC)
+		else if (this->_errno == EMFILE || this->_errno == ENFILE || this->_errno == ENOMEM || this->_errno == ENOSPC)
 			status = "503 Service Unavailable";
 		else
 			status = "500 Internal Server Error";
-		errno = 0;
 		return (status);
 	}
 	return ("102 Processing");
@@ -124,22 +145,25 @@ std::string	Request::get(void)
 	char			buffer[4096];
 	ssize_t			bytes;
 
-	bytes = read(this->_fdfile, buffer, 4096);
-	if (bytes < 0)
+	if (this->_fdfile != -1)
 	{
-		close(this->_fdfile);
-		this->_fdfile = -1;
-		this->_bodyresponse.erase(this->_bodyresponse.begin(), this->_bodyresponse.end());
-		return ("500 Internal Server Error");
-	}
-	this->_bodyresponse.insert(this->_bodyresponse.end(), &buffer[0], &buffer[bytes]);
-	this->_contentlength = this->_contentlength + bytes;
-	this->_client.setInRequest(true);
-	if (bytes < 4096)
-	{
-		close(this->_fdfile);
-		this->_fdfile = -1;
-		return ("200 OK");
+		bytes = read(this->_fdfile, buffer, 4096);
+		if (bytes < 0)
+		{
+			errno = 0;
+			close(this->_fdfile);
+			this->_fdfile = -1;
+			this->_bodyresponse.erase(this->_bodyresponse.begin(), this->_bodyresponse.end());
+			return ("500 Internal Server Error");
+		}
+		this->_bodyresponse.insert(this->_bodyresponse.end(), &buffer[0], &buffer[bytes]);
+		this->_contentlength = this->_contentlength + bytes;
+		if (bytes < 4096)
+		{
+			close(this->_fdfile);
+			this->_fdfile = -1;
+			return ("200 OK");
+		}
 	}
 	return ("102 Processing");
 }
@@ -155,6 +179,7 @@ std::string	Request::post(void)
 	if (i > 4096)
 		i = 4096;
 	bytes = write(this->_fdfile, this->_body.data(), i);
+	errno = 0;
 	this->_body.erase(this->_body.begin(), this->_body.begin() + i);
 	if (bytes <= 0)
 	{
@@ -187,6 +212,7 @@ std::string	Request::multipost(void)
 	if (i > 4096)
 		i = 4096;
 	bytes = write(this->_fdfile, (*it).second.data(), i);
+	errno = 0;
 	(*it).second.erase((*it).second.begin(), (*it).second.begin() + i);
 	if (bytes <= 0)
 	{
@@ -229,10 +255,10 @@ void	Request::createFilesMultipost(void)
 		it = this->_files.begin();
 		path = this->_filepath + (*it).first;
 		this->_fdfile = open(path.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
-		if (errno)
+		if (this->_fdfile == -1)
 		{
-			this->_files.erase(this->_files.begin());
 			errno = 0;
+			this->_files.erase(this->_files.begin());
 			continue ;
 		}
 		break ;
@@ -322,7 +348,7 @@ void	Request::buildResponse(void)
 		else
 			str = str + "Content-Type: text/html\r\n";
 	}
-	str = str + "Cache-Control: no-cache, no-store, must-revalidate\r\n";
+	str = str + "Cache-Control: no-cache, must-revalidate\r\n";
 	if (this->_client.keepAlive())
 		str = str + "Connection: keep-alive\r\n";
 	else
@@ -462,18 +488,20 @@ void	Request::clear(void)
 	this->_method = "";
 	this->_filename = "";
 	this->_filepath = "";
+	if (this->_fdfile != -1)
+		close(this->_fdfile);
 	this->_fdfile = -1;
 	this->_contentlength = 0;
-	this->_maxcontentlength = 0;
+	this->_maxcontentlength = -1;
 	this->_multi = false;
 	this->_boundary = "";
 	this->_files.erase(this->_files.begin(), this->_files.end());
 	this->_iscgi = false;
+	this->_cookie = "";
 	this->_dir = "";
 	this->_autoindex = false;
 	this->_redirect = "";
 	this->_redirected = 0;
-	this->_client.setInRequest(false);
 	this->_client.setToRead(true);
 	this->_client.actualizeTime();
 }

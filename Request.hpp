@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/19 15:53:33 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/20 13:05:34 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,7 @@ class Request
 	public:
 	// Constructors and Destructor
 		Request(Client &cl);
+		Request(Request *rhs);
 		~Request(void);
 	// Functions
 		int															reader(void);
@@ -42,6 +43,7 @@ class Request
 
 	private:
 	// Attributes
+		int															_errno;
 		Client														&_client;
 		Server														_serv;
 		// States

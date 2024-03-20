@@ -63,6 +63,7 @@ class Manager
 		void						manageClients(void);
 		void						manageTimeout(void);
 	// Attributes
+		int							_errno;
 		struct timeval				_timeout;
 		time_t						_timer;
 		std::map<int, int>			_sockets;

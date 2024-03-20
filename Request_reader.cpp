@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 11:14:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/19 14:44:56 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/20 13:22:24 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,8 @@
 #define	CONNECTION "Connection: keep-alive"
 #define COOKIE "Cookie: "
 #define FILENAME "filename=\""
+#define MULTI "Content-Type: multipart/form-data"
+#define BOUND "boundary="
 
 //////////////////////////////
 // Function: reader
@@ -32,13 +34,15 @@ int	Request::reader(void)
 	ft_memset(buffer, 0, 2048 + 1);
 	bytes = recv(this->_client.getFD(), buffer, 2048, 0);
 	if (bytes <= 0)
+	{
+		errno = 0;
 		return (bytes);
-	crlf = "\r\n\r\n";
+	}
 	this->_request.insert(this->_request.end(), &buffer[0], &buffer[bytes]);
-	pos = std::search(this->_request.begin(), this->_request.end(), crlf.begin(), crlf.end());
+	pos = std::search(this->_request.begin(), this->_request.end(), CRLF2, &CRLF2[4]);
 	if (!this->_multi && (pos == this->_request.end() || this->_contentlength + bytes < this->_maxcontentlength))
 		return (bytes);
-	if (std::search(this->_header.begin(), this->_header.end(), crlf.begin(), crlf.end()) == this->_header.end())
+	if (std::search(this->_header.begin(), this->_header.end(), CRLF2, &CRLF2[4]) == this->_header.end())
 		this->fillHeader(pos, bytes);
 	else
 		this->fillBody(pos, bytes);
@@ -48,12 +52,8 @@ int	Request::reader(void)
 void	Request::fillHeader(std::vector<char>::iterator pos, int bytes)
 {
 	std::vector<char>::iterator	it;
-	std::string					multi;
-	std::string					bound;
 	std::string					nb;
 
-	multi = "Content-Type: multipart/form-data";
-	bound = "boundary=";
 	this->_header.insert(this->_header.end(), this->_request.begin(), pos + 4);
 	this->_request.erase(this->_request.begin(), pos + 4);
 	std::cout << "[*] Header of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n"; printvector(this->_header, 2);
@@ -66,13 +66,13 @@ void	Request::fillHeader(std::vector<char>::iterator pos, int bytes)
 	it = std::search(pos + 16, this->_header.end(), CRLF, &CRLF[2]);
 	nb = std::string(pos + 16, it);
 	this->_maxcontentlength = std::atoi(nb.c_str());
-	pos = std::search(this->_header.begin(), this->_header.end(), multi.begin(), multi.end());
+	pos = std::search(this->_header.begin(), this->_header.end(), MULTI, &MULTI[33]);
 	if (pos != this->_header.end())
 	{
 		std::vector<char>::iterator	it;
 
 		this->_multi = true;
-		pos = std::search(pos, this->_header.end(), bound.begin(), bound.end());
+		pos = std::search(pos, this->_header.end(), BOUND, &BOUND[9]);
 		it = std::search(pos + 10, this->_header.end(), CRLF, &CRLF[2]);
 		std::string	tmp(pos + 10, it);
 		this->_boundary = tmp;
@@ -99,10 +99,10 @@ void	Request::fillBody(std::vector<char>::iterator pos, int bytes)
 			this->_request.erase(this->_request.begin(), this->_request.end());
 		}
 		this->_contentlength = this->_contentlength + bytes;
-		if (this->_contentlength > this->_maxcontentlength)
+		if (this->_contentlength > this->_maxcontentlength && this->_maxcontentlength > -1)
 			this->_body.resize(this->_maxcontentlength);
-		if (this->_contentlength >= this->_maxcontentlength \
-			|| std::search(this->_body.begin(), this->_body.end(), CRLF, &CRLF[2]) != this->_body.end())
+		if ((this->_contentlength >= this->_maxcontentlength && this->_maxcontentlength > -1) \
+			|| (std::search(this->_body.begin(), this->_body.end(), CRLF, &CRLF[2]) != this->_body.end()))
 		{
 			this->_contentlength = 0;
 			this->_client.setToRead(false);

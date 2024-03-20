@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 11:15:58 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/19 15:55:35 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/20 13:16:15 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -141,8 +141,13 @@ std::string	Request::checkLocation(void)
 	}
 	if (this->_method == "GET")
 	{
-		if (stat(this->_filepath.c_str(), &st) == -1 && errno != ENOENT)
-			return ("500 Internal Server Error");
+		if (stat(this->_filepath.c_str(), &st) == -1)
+		{
+			this->_errno = errno;
+			errno = 0;
+			if (errno > 0 && errno != ENOENT)
+				return ("500 Internal Server Error");
+		}
 		if (S_ISDIR(st.st_mode))
 		{
 			this->_dir = "Servers/" + this->_serv.getRoot() + '/' + this->_filename;
