@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/20 13:22:04 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/21 09:50:29 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -162,7 +162,7 @@ void	Request::processCGI(void)
 
 int	Request::writing(void)
 {
-	size_t						len;
+	size_t	len;
 
 	len = this->_response.size();
 	if (len > 4096)
