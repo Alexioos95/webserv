@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/21 09:50:29 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/21 12:42:08 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -99,6 +99,8 @@ int	Request::processing(void)
 	{
 		std::string tmp;
 
+		if (this->_status == "400 Bad Request")
+			this->_client.setKeepAlive(false);
 		if (this->_status != "301 Moved Permanently")
 			tmp = this->error();
 		if (tmp != "102 Processing")

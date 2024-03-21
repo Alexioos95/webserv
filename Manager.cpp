@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/18 12:20:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/21 09:40:44 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/21 12:31:19 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,6 +57,8 @@ Server	Manager::getServ(std::string name, int port)
 		}
 		it_serv++;
 	}
+	if (res.empty())
+		throw (std::runtime_error("No Server found"));
 	it_res = res.begin();
 	while (it_res != res.end())
 	{

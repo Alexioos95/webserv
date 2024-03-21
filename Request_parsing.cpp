@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 11:15:58 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/21 10:01:04 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/21 13:09:45 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,8 @@ std::string	Request::parse(void)
 	std::string						version;
 	std::string						length;
 
+	if (this->_header.size() < 26)
+		return ("400 Bad Request");
 	it = std::search(this->_header.begin(), this->_header.end(), CRLF, &CRLF[2]);
 	line = std::string(this->_header.begin(), it);
 	if (line.empty())
@@ -85,13 +87,16 @@ bool	Request::searchServ()
 	std::string					host;
 	std::string					port;
 
-	host = "Host: ";
+	host = "\r\nHost: ";
+	it = this->_header.end();
 	it = std::search(this->_header.begin(), this->_header.end(), host.begin(), host.end());
 	if (it == this->_header.end())
 		return (false);
-	ite = std::search(it, this->_header.end(), CRLF, &CRLF[2]);
-	host = std::string(it + 6, ite);
+	ite = std::search(it + 2, this->_header.end(), CRLF, &CRLF[2]);
+	host = std::string(it + 8, ite);
 	if (host.empty())
+		return (false);
+	if (host.find(':') == std::string::npos || host.find(':') == 0)
 		return (false);
 	this->_name = host.substr(0, host.find(':'));
 	if (this->_name.empty())
@@ -99,7 +104,14 @@ bool	Request::searchServ()
 	port = host.substr(this->_name.length() + 1, host.find("\r\n") - this->_name.length());
 	if (port.empty())
 		return (false);
-	this->_serv = this->_client.getManager()->getServ(this->_name, std::atoi(port.c_str()));
+	try
+	{
+		this->_serv = this->_client.getManager()->getServ(this->_name, std::atoi(port.c_str()));
+	}
+	catch (const std::exception& e)
+	{
+		return (false);
+	}
 	return (true);
 }
 

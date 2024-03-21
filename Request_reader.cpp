@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 11:14:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/20 16:18:30 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/21 13:09:37 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,10 +16,8 @@
 #define	CRLF "\r\n"
 #define	CRLF2 "\r\n\r\n"
 #define	CONTLEN "Content-Length: "
-#define	CONNECTION "Connection: keep-alive"
-#define COOKIE "Cookie: "
 #define FILENAME "filename=\""
-#define MULTI "Content-Type: multipart/form-data"
+#define MULTI "\r\nContent-Type: multipart/form-data"
 #define BOUND "boundary="
 
 //////////////////////////////
@@ -51,6 +49,8 @@ int	Request::reader(void)
 
 void	Request::fillHeader(std::vector<char>::iterator pos, int bytes)
 {
+	try
+	{
 	std::vector<char>::iterator	it;
 	std::string					nb;
 
@@ -66,7 +66,7 @@ void	Request::fillHeader(std::vector<char>::iterator pos, int bytes)
 	it = std::search(pos + 16, this->_header.end(), CRLF, &CRLF[2]);
 	nb = std::string(pos + 16, it);
 	this->_maxcontentlength = std::atoi(nb.c_str());
-	pos = std::search(this->_header.begin(), this->_header.end(), MULTI, &MULTI[33]);
+	pos = std::search(this->_header.begin(), this->_header.end(), MULTI, &MULTI[35]);
 	if (pos != this->_header.end())
 	{
 		std::vector<char>::iterator	it;
@@ -81,6 +81,13 @@ void	Request::fillHeader(std::vector<char>::iterator pos, int bytes)
 	{
 		pos = std::search(this->_request.begin(), this->_request.end(), CRLF2, &CRLF2[4]);
 		this->fillBody(pos, bytes);
+	}
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << "FAULTYYYY\n";
+		std::cerr << "FAULTYYYY\n";
+		std::cerr << "FAULTYYYY\n";
 	}
 }
 
