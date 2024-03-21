@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 11:15:58 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/21 13:09:45 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/21 14:04:45 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -131,7 +131,10 @@ std::string	Request::checkLocation(void)
 		if (!l.allowCgi() || this->_method == "DELETE")
 			return ("403 Forbiddden");
 		else
+		{
 			this->_iscgi = true;
+			std::cerr << "BODY="; printvector(this->_body, 0);
+		}
 	}
 	if (this->_method == "POST" && !this->_iscgi)
 	{

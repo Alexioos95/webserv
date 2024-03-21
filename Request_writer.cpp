@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/21 13:50:26 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/21 13:53:44 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -143,6 +143,7 @@ void	Request::processCGI(void)
 		if (bytes < 0)
 		{
 			errno = 0;
+			this->delCGI();
 			this->_response.erase(this->_response.begin(), this->_response.end());
 			this->_status = "500 Internal Server Error";
 		}
@@ -151,9 +152,9 @@ void	Request::processCGI(void)
 			this->_response.insert(this->_response.end(), &buffer[0], &buffer[bytes]);
 			if (bytes < 4096)
 			{
+				this->delCGI();
 				this->_inprocess = false;
 				this->_inwrite = true;
-				this->delCGI();
 			}
 		}
 	}
