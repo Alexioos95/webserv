@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/21 13:40:54 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/21 13:50:26 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,6 +124,7 @@ void	Request::processCGI(void)
 		if (this->_cgi == NULL)
 		{
 			env.push_back("HTTP_COOKIE=" + this->_cookie);
+			env.push_back("REQUEST_METHOD=" + this->_method);
 			this->_cgi = new Cgi(*this->_client.getManager(), env);
 		}
 		bytes = this->_body.size();
