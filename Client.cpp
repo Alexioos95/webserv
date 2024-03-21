@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:43:22 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/21 09:09:08 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/21 09:32:35 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -77,6 +77,12 @@ bool	Client::keepAlive(void) const
 
 //////////////////////////////
 // Functions
+void	Client::deleteCGI(void)
+{
+	if (this->_request != NULL)
+		this->_request->delCGI();
+}
+
 void	Client::actualizeTime(void)
 { this->_timer = std::time(0); }
 

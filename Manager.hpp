@@ -53,7 +53,7 @@ class Manager
 	// Functions
 		void						defaultconfig(void);
 		void						run(void);
-		void						shutdown(void);
+		void						shutdown(bool delcgi);
 
 	private:
 	// Functions

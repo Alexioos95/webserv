@@ -97,7 +97,7 @@ void Cgi::launchCgi(const std::string &f)
 	_pid = fork();
 	if (_pid == 0)
 	{
-		_man.shutdown();
+		_man.shutdown(false);
 		if (_pipeOut[0] > -1)
 			close(_pipeOut[0]);
 		if (_pipeIn[1] > -1)

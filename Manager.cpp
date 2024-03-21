@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/18 12:20:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/21 09:03:04 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/21 09:40:44 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -221,7 +221,7 @@ void	Manager::run(void)
 	{
 		if (g_sigint == true)
 		{
-			this->shutdown();
+			this->shutdown(true);
 			throw (SigintException());
 		}
 		this->manageFDSets();
@@ -238,7 +238,7 @@ void	Manager::run(void)
 	}
 }
 
-void	Manager::shutdown(void)
+void	Manager::shutdown(bool delcgi)
 {
 	std::vector<Client>::iterator	it;
 	std::map<int, int>::iterator	ite;
@@ -247,6 +247,8 @@ void	Manager::shutdown(void)
 	while (it != this->_clients.end())
 	{
 		close((*it).getFD());
+		if (delcgi)
+			(*it).deleteCGI();
 		it++;
 	}
 	ite = this->_sockets.begin();
@@ -330,7 +332,7 @@ void	Manager::managePorts(void)
 				{
 					std::cout << "[-] " << "No more server are running. ";
 					std::cout << "Shutting down the program..." << "\n" << std::endl;
-					this->shutdown();
+					this->shutdown(true);
 				}
 				it_serv++;
 			}
@@ -392,6 +394,7 @@ void	Manager::manageClients(void)
 			std::cerr << "[-] An error occured with a client (fd " << fd << ") on port " << (*it).getPort();
 			std::cerr << ". Closing the connection...\n" << std::endl;
 			close(fd);
+			(*it).deleteCGI();
 			it = this->_clients.erase(it) - 1;
 		}
 		else if (FD_ISSET(fd, &this->_rset))
@@ -402,6 +405,7 @@ void	Manager::manageClients(void)
 				std::cerr << "[-] An error occured when reading the request of a client (fd " << fd << ") on port " << (*it).getPort();
 				std::cerr << ". Closing the connection...\n" << std::endl;
 				close(fd);
+				(*it).deleteCGI();
 				it = this->_clients.erase(it) - 1;
 			}
 		}
@@ -413,6 +417,7 @@ void	Manager::manageClients(void)
 				if (!(*it).keepAlive())
 				{
 					close(fd);
+					(*it).deleteCGI();
 					it = this->_clients.erase(it) - 1;
 				}
 			}
@@ -421,6 +426,7 @@ void	Manager::manageClients(void)
 				std::cerr << "[-] An error occured when sending the response to a client (fd " << fd << ") on port " << (*it).getPort();
 				std::cerr << ". Closing the connection...\n" << std::endl;
 				close(fd);
+				(*it).deleteCGI();
 				it = this->_clients.erase(it) - 1;
 			}
 		}
@@ -436,11 +442,12 @@ void	Manager::manageTimeout(void)
 	this->_timer = std::time(0);
 	while (it != this->_clients.end())
 	{
-		if (this->_timer - (*it).getTimer() > 4)
+		if (this->_timer - (*it).getTimer() > 119)
 		{
 			std::cout << "[-] A client (fd " << (*it).getFD() << ") timed out. ";
 			std::cout << "Closing the connection...\n" << std::endl;
 			close((*it).getFD());
+			(*it).deleteCGI();
 			it = this->_clients.erase(it) - 1;
 		}
 		it++;

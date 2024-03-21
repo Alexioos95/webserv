@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/21 08:54:28 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/21 09:32:02 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,6 +40,7 @@ class Request
 	// Functions
 		int															reader(void);
 		int															writer(void);
+		void														delCGI(void);
 
 	private:
 	// Attributes

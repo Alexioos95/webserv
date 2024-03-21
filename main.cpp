@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:05:30 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/20 16:01:37 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/21 09:38:25 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,7 +44,7 @@ int	main(int argc, char **argv)
 
 		ret = 0;
 		res = e.what();
-		mng.shutdown();
+		mng.shutdown(true);
 		if (!res.empty() && res != "std::exception")
 		{
 			std::cerr << "[!] Critical error in the program: " << e.what();

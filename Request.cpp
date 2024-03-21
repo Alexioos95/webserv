@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/21 08:55:01 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/21 09:39:16 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,12 +22,11 @@ Request::Request(Client &cl) : _client(cl), _inparse(true), _inprocess(false), \
 
 Request::Request(Client &cl, Request *rhs) : _client(cl), _serv(rhs->_serv), _inparse(rhs->_inparse), \
 	_inprocess(rhs->_inprocess), _inerror(rhs->_inerror), _inbuild(rhs->_inbuild), _inwrite(rhs->_inwrite), \
-	_status(rhs->_status), _name(rhs->_name), \
-	_method(rhs->_method), _filename(rhs->_filename), _filepath(rhs->_filepath), _fdfile(rhs->_fdfile), \
-	_stat(rhs->_stat), _contentlength(rhs->_contentlength), _maxcontentlength(rhs->_maxcontentlength), \
-	_multi(rhs->_multi), _boundary(rhs->_boundary), _iscgi(rhs->_iscgi), _cgi(rhs->_cgi), \
-	_cookie(rhs->_cookie), _get(rhs->_get), _post(rhs->_post), _del(rhs->_del), _dir(rhs->_dir), \
-	_autoindex(rhs->_autoindex), _redirect(rhs->_redirect), _redirected(rhs->_redirected)
+	_status(rhs->_status), _name(rhs->_name), _method(rhs->_method), _filename(rhs->_filename), \
+	_filepath(rhs->_filepath), _fdfile(rhs->_fdfile), _stat(rhs->_stat), _contentlength(rhs->_contentlength), \
+	_maxcontentlength(rhs->_maxcontentlength), _multi(rhs->_multi), _boundary(rhs->_boundary), \
+	_iscgi(rhs->_iscgi), _cgi(rhs->_cgi), _cookie(rhs->_cookie), _get(rhs->_get), _post(rhs->_post), \
+	_del(rhs->_del), _dir(rhs->_dir), _autoindex(rhs->_autoindex), _redirect(rhs->_redirect), _redirected(rhs->_redirected)
 {
 	this->_request = rhs->_request;
 	this->_header = rhs->_header;
@@ -42,8 +41,13 @@ Request::~Request(void)
 {
 	if (this->_fdfile != -1)
 		close (this->_fdfile);
-	if (this->_cgi != NULL)
-		delete (this->_cgi);
+}
+
+void	Request::delCGI(void)
+{
+	if (this->_cgi)
+		delete this->_cgi;
+	this->_cgi = NULL;
 }
 
 //////////////////////////////
