@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:06 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/20 13:21:59 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/21 08:55:01 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@ Request::Request(Client &cl) : _client(cl), _inparse(true), _inprocess(false), \
 	_maxcontentlength(-1), _multi(false), _iscgi(false), _cgi(NULL), _get(true), _post(true), \
 	_del(true), _autoindex(false), _redirected(0) { }
 
-Request::Request(Request *rhs) : _client(rhs->_client), _serv(rhs->_serv), _inparse(rhs->_inparse), \
+Request::Request(Client &cl, Request *rhs) : _client(cl), _serv(rhs->_serv), _inparse(rhs->_inparse), \
 	_inprocess(rhs->_inprocess), _inerror(rhs->_inerror), _inbuild(rhs->_inbuild), _inwrite(rhs->_inwrite), \
 	_status(rhs->_status), _name(rhs->_name), \
 	_method(rhs->_method), _filename(rhs->_filename), _filepath(rhs->_filepath), _fdfile(rhs->_fdfile), \
@@ -36,7 +36,6 @@ Request::Request(Request *rhs) : _client(rhs->_client), _serv(rhs->_serv), _inpa
 	this->_bodyresponse = rhs->_bodyresponse;
 	this->_response = rhs->_response;
 	this->_files = rhs->_files;
-	delete rhs;
 }
 
 Request::~Request(void)
