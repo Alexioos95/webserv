@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 11:15:58 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/21 14:04:45 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/22 09:14:07 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -108,7 +108,7 @@ bool	Request::searchServ()
 	{
 		this->_serv = this->_client.getManager()->getServ(this->_name, std::atoi(port.c_str()));
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		return (false);
 	}

@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/21 09:49:09 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/21 12:41:53 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/22 09:58:00 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -111,25 +111,22 @@ std::string	Request::get(void)
 	char			buffer[4096];
 	ssize_t			bytes;
 
-	if (this->_fdfile != -1)
+	bytes = read(this->_fdfile, buffer, 4096);
+	if (bytes < 0)
 	{
-		bytes = read(this->_fdfile, buffer, 4096);
-		if (bytes < 0)
-		{
-			errno = 0;
-			close(this->_fdfile);
-			this->_fdfile = -1;
-			this->_bodyresponse.erase(this->_bodyresponse.begin(), this->_bodyresponse.end());
-			return ("500 Internal Server Error");
-		}
-		this->_bodyresponse.insert(this->_bodyresponse.end(), &buffer[0], &buffer[bytes]);
-		this->_contentlength = this->_contentlength + bytes;
-		if (bytes < 4096)
-		{
-			close(this->_fdfile);
-			this->_fdfile = -1;
-			return ("200 OK");
-		}
+		errno = 0;
+		close(this->_fdfile);
+		this->_fdfile = -1;
+		this->_bodyresponse.erase(this->_bodyresponse.begin(), this->_bodyresponse.end());
+		return ("500 Internal Server Error");
+	}
+	this->_bodyresponse.insert(this->_bodyresponse.end(), &buffer[0], &buffer[bytes]);
+	this->_contentlength = this->_contentlength + bytes;
+	if (bytes < 4096)
+	{
+		close(this->_fdfile);
+		this->_fdfile = -1;
+		return ("200 OK");
 	}
 	return ("102 Processing");
 }
@@ -170,6 +167,8 @@ std::string	Request::multipost(void)
 	ssize_t																bytes;
 	if (this->_fdfile == -1)
 		this->createFilesMultipost();
+	if (!this->_postsuccess)
+		return ("409 Conflict");
 	if (this->_status == "500 Internal Server Error")
 		return (this->_status);
 	it = this->_files.begin();
@@ -178,10 +177,10 @@ std::string	Request::multipost(void)
 	if (i > 4096)
 		i = 4096;
 	bytes = write(this->_fdfile, (*it).second.data(), i);
-	errno = 0;
 	(*it).second.erase((*it).second.begin(), (*it).second.begin() + i);
 	if (bytes <= 0)
 	{
+		errno = 0;
 		close(this->_fdfile);
 		this->_fdfile = -1;
 		this->_files.erase(this->_files.begin());
@@ -203,37 +202,44 @@ void	Request::createFilesMultipost(void)
 {
 	std::vector<std::pair<std::string, std::vector<char> > >::iterator	it;
 	std::string															cmd;
-	std::string															status;
 	std::string															path;
 
 	cmd = "mkdir -p -m 755 " + this->_filepath;
-	if (access(this->_filepath.c_str(), F_OK) == -1 && std::system(cmd.c_str()) != 0 && errno != EEXIST)
+	if (this->_files.empty() || (access(this->_filepath.c_str(), F_OK) == -1 && std::system(cmd.c_str()) != 0 && errno != EEXIST))
 	{
-		status = "500 Internal Server Error";
 		errno = 0;
+		this->_status = "500 Internal Server Error";
 		return ;
 	}
 	errno = 0;
 	while (1)
 	{
-		if (this->_files.empty())
-			break ;
 		it = this->_files.begin();
+		if (it == this->_files.end())
+			break ;
 		path = this->_filepath + (*it).first;
-		this->_fdfile = open(path.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
+		this->_fdfile = open(path.c_str(), O_WRONLY, 0644);
 		if (this->_fdfile == -1)
 		{
 			errno = 0;
-			this->_files.erase(this->_files.begin());
-			continue ;
+			this->_fdfile = open(path.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
+			if (this->_fdfile == -1)
+			{
+				errno = 0;
+				it = this->_files.erase(this->_files.begin());
+				continue ;
+			}
+			this->_postsuccess = true;
+			break ;
 		}
-		break ;
+		close(this->_fdfile);
+		this->_files.erase(it);
 	}
 }
 
 std::string	Request::error(void)
 {
-	if (this->_inerror)
+	if (!this->_inerror)
 	{
 		std::map<std::string, std::string>				m;
 		std::map<std::string, std::string>::iterator	it;
@@ -241,7 +247,7 @@ std::string	Request::error(void)
 		std::string										root;
 		std::string										error;
 
-		this->_inerror = false;
+		this->_inerror = true;
 		m = this->_serv.getErrors();
 		it = m.begin();
 		error = this->_status.substr(0, 3);
@@ -462,6 +468,7 @@ void	Request::clear(void)
 	this->_multi = false;
 	this->_boundary = "";
 	this->_files.erase(this->_files.begin(), this->_files.end());
+	this->_postsuccess = false;
 	this->_iscgi = false;
 	this->_cookie = "";
 	this->_dir = "";

@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 11:14:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/21 13:09:37 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/22 08:57:07 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,6 @@ int	Request::reader(void)
 {
 	char						buffer[2048 + 1];
 	int							bytes;
-	std::string					crlf;
 	std::vector<char>::iterator	pos;
 
 	ft_memset(buffer, 0, 2048 + 1);
@@ -49,8 +48,6 @@ int	Request::reader(void)
 
 void	Request::fillHeader(std::vector<char>::iterator pos, int bytes)
 {
-	try
-	{
 	std::vector<char>::iterator	it;
 	std::string					nb;
 
@@ -81,13 +78,6 @@ void	Request::fillHeader(std::vector<char>::iterator pos, int bytes)
 	{
 		pos = std::search(this->_request.begin(), this->_request.end(), CRLF2, &CRLF2[4]);
 		this->fillBody(pos, bytes);
-	}
-	}
-	catch(const std::exception& e)
-	{
-		std::cerr << "FAULTYYYY\n";
-		std::cerr << "FAULTYYYY\n";
-		std::cerr << "FAULTYYYY\n";
 	}
 }
 
