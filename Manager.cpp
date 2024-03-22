@@ -33,9 +33,6 @@ Manager::~Manager(void)
 
 //////////////////////////////
 // Getters
-std::map<int, int>	&Manager::getSockets(void)
-{ return (this->_sockets); }
-
 Server	Manager::getServ(std::string name, int port)
 {
 	std::vector<int>										ports;
@@ -308,7 +305,7 @@ void	Manager::managePorts(void)
 		if (FD_ISSET(fdsock, &this->_errset))
 		{
 			std::cerr << "[!] A critical error occured while listening on port " << port;
-			std::cerr << ". Closing the connection..." << "\n" << std::endl;
+			std::cerr << ". Closing the connection...\n" << std::endl;
 			close(fdsock);
 			tmp = it_port;
 			it_port--;
@@ -327,13 +324,13 @@ void	Manager::managePorts(void)
 				if (servport.empty())
 				{
 					std::cout << "[-] " << (*it_serv).getName() << " doesn't have any port to listen to anymore. ";
-					std::cout << "Closing the server..." << "\n" << std::endl;
+					std::cout << "Closing the server...\n" << std::endl;
 					it_serv = this->_servs.erase(it_serv) - 1;
 				}
 				if (this->_servs.empty())
 				{
 					std::cout << "[-] " << "No more server are running. ";
-					std::cout << "Shutting down the program..." << "\n" << std::endl;
+					std::cout << "Shutting down the program...\n" << std::endl;
 					this->shutdown(true);
 				}
 				it_serv++;
@@ -371,10 +368,11 @@ void	Manager::acceptClient(int fdsock, int port)
 	try
 	{
 		Client	cl(this, fd, port);
+		FD_SET(cl.getFD(), &this->_rset);
 		this->_clients.push_back(cl);
 		std::cout << "[+] Accepted new client on port " << port << ". Gave him fd " << fd << "\n" << std::endl;
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		std::cerr << "[!] Failed creating new client on port " << port << ": " << e.what() << '\n' << std::endl;
 		close(fd);
@@ -444,7 +442,7 @@ void	Manager::manageTimeout(void)
 	this->_timer = std::time(0);
 	while (it != this->_clients.end())
 	{
-		if (this->_timer - (*it).getTimer() > 4)
+		if (this->_timer - (*it).getTimer() > 119)
 		{
 			std::cout << "[-] A client (fd " << (*it).getFD() << ") timed out. ";
 			std::cout << "Closing the connection...\n" << std::endl;

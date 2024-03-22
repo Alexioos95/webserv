@@ -15,12 +15,12 @@
 
 //////////////////////////////
 // Constructors and Destructor
-Request::Request(Client &cl) : _client(cl), _inparse(true), _inprocess(false), \
+Request::Request(Client *cl) : _client(cl), _inparse(true), _inprocess(false), \
 	_inerror(false), _inbuild(false), _inwrite(false), _fdfile(-1), _contentlength(0), \
-	_maxcontentlength(-1), _multi(false), _postsuccess(false), _iscgi(false), _cgi(NULL), _get(true), _post(true), \
-	_del(true), _autoindex(false), _redirected(0) { }
+	_maxcontentlength(-1), _multi(false), _postsuccess(false), _iscgi(false), _cgi(NULL), \
+	_get(true), _post(true), _del(true), _autoindex(false), _redirected(0) { }
 
-Request::Request(Client &cl, Request *rhs) : _client(cl), _serv(rhs->_serv), _inparse(rhs->_inparse), \
+Request::Request(Client *cl, Request *rhs) : _client(cl), _serv(rhs->_serv), _inparse(rhs->_inparse), \
 	_inprocess(rhs->_inprocess), _inerror(rhs->_inerror), _inbuild(rhs->_inbuild), _inwrite(rhs->_inwrite), \
 	_request(rhs->_request), _header(rhs->_header), _body(rhs->_body), _headerresponse(rhs->_headerresponse), \
 	_bodyresponse(rhs->_bodyresponse), _response(rhs->_response), _status(rhs->_status), _name(rhs->_name), \

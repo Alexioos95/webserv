@@ -15,15 +15,11 @@
 
 //////////////////////////////
 // Constructors and Destructor
-Client::Client(Manager *main, int fd, int port) : _manager(main), _request(new Request(*this)), \
+Client::Client(Manager *main, int fd, int port) : _manager(main), _request(new Request(this)), \
 	_fd(fd), _port(port), _timer(std::time(0)), _toread(true), _keepalive(true) { }
 
-Client::Client(Client const &rhs) : _manager(rhs._manager), _fd(rhs._fd), \
-	_port(rhs._port), _timer(rhs._timer), _toread(rhs._toread), _keepalive(rhs._keepalive)
-{
-	Request	*n = new Request(*this, rhs._request);
-	this->_request = n;
-}
+Client::Client(Client const &rhs) : _manager(rhs._manager), _request(new Request(this, rhs._request)), _fd(rhs._fd), \
+	_port(rhs._port), _timer(rhs._timer), _toread(rhs._toread), _keepalive(rhs._keepalive) { }
 
 Client::~Client(void)
 { delete this->_request; }
@@ -35,7 +31,7 @@ Client	&Client::operator=(Client &rhs)
 	if (this != &rhs)
 	{
 		this->_manager = rhs._manager;
-		Request	a = Request(*this, this->_request);
+		Request	a = Request(this, this->_request);
 		delete this->_request;
 		this->_request = new Request (a);
 		this->_fd = rhs._fd;

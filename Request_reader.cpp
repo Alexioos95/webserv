@@ -14,7 +14,7 @@
 #include "Client.hpp"
 
 #define	CRLF "\r\n"
-#define	CRLF2 "\r\n\r\n"
+#define	CRLFX "\r\n\r\n"
 #define	CONTLEN "Content-Length: "
 #define FILENAME "filename=\""
 #define MULTI "\r\nContent-Type: multipart/form-data"
@@ -24,22 +24,21 @@
 // Function: reader
 int	Request::reader(void)
 {
-	char						buffer[2048 + 1];
+	char						buffer[2048];
 	int							bytes;
 	std::vector<char>::iterator	pos;
 
-	ft_memset(buffer, 0, 2048 + 1);
-	bytes = recv(this->_client.getFD(), buffer, 2048, 0);
+	bytes = recv(this->_client->getFD(), buffer, 2048, 0);
 	if (bytes <= 0)
 	{
 		errno = 0;
 		return (bytes);
 	}
 	this->_request.insert(this->_request.end(), &buffer[0], &buffer[bytes]);
-	pos = std::search(this->_request.begin(), this->_request.end(), CRLF2, &CRLF2[4]);
+	pos = std::search(this->_request.begin(), this->_request.end(), CRLFX, &CRLFX[4]);
 	if (!this->_multi && (pos == this->_request.end() || this->_contentlength + bytes < this->_maxcontentlength))
 		return (bytes);
-	if (std::search(this->_header.begin(), this->_header.end(), CRLF2, &CRLF2[4]) == this->_header.end())
+	if (this->_request.empty() || std::search(this->_header.begin(), this->_header.end(), CRLFX, &CRLFX[4]) == this->_header.end())
 		this->fillHeader(pos, bytes);
 	else
 		this->fillBody(pos, bytes);
@@ -53,11 +52,11 @@ void	Request::fillHeader(std::vector<char>::iterator pos, int bytes)
 
 	this->_header.insert(this->_header.end(), this->_request.begin(), pos + 4);
 	this->_request.erase(this->_request.begin(), pos + 4);
-	std::cout << "[*] Header of client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n"; printvector(this->_header, 2);
 	pos = std::search(this->_header.begin(), this->_header.end(), CONTLEN, &CONTLEN[16]);
 	if (pos == this->_header.end())
 	{
-		this->_client.setToRead(false);
+		std::cout << "[*] Header of client (fd " << this->_client->getFD() << ") on port " << this->_client->getPort() << "\n"; printvector(this->_header, 2);
+		this->_client->setToRead(false);
 		return ;
 	}
 	it = std::search(pos + 16, this->_header.end(), CRLF, &CRLF[2]);
@@ -76,7 +75,7 @@ void	Request::fillHeader(std::vector<char>::iterator pos, int bytes)
 	}
 	if (!this->_request.empty())
 	{
-		pos = std::search(this->_request.begin(), this->_request.end(), CRLF2, &CRLF2[4]);
+		pos = std::search(this->_request.begin(), this->_request.end(), CRLFX, &CRLFX[4]);
 		this->fillBody(pos, bytes);
 	}
 }
@@ -102,7 +101,7 @@ void	Request::fillBody(std::vector<char>::iterator pos, int bytes)
 			|| (std::search(this->_body.begin(), this->_body.end(), CRLF, &CRLF[2]) != this->_body.end()))
 		{
 			this->_contentlength = 0;
-			this->_client.setToRead(false);
+			this->_client->setToRead(false);
 		}
 	}
 	else if (this->_request.size() < static_cast<unsigned long>(this->_maxcontentlength) \
@@ -134,7 +133,7 @@ void	Request::parseMultiEncoded(void)
 		if (ite == this->_request.end())
 			break ;
 		name = std::string(it + 10, ite - 1);
-		it = std::search(this->_request.begin(), this->_request.end(), CRLF2, &CRLF2[4]);
+		it = std::search(this->_request.begin(), this->_request.end(), CRLFX, &CRLFX[4]);
 		if (it == this->_request.end())
 			break ;
 		this->_request.erase(this->_request.begin(), it + 4);
@@ -148,5 +147,5 @@ void	Request::parseMultiEncoded(void)
 		if (this->_request.size() == 2)
 			break ;
 	}
-	this->_client.setToRead(false);
+	this->_client->setToRead(false);
 }

@@ -14,7 +14,6 @@
 #include "Client.hpp"
 
 #define	CRLF "\r\n"
-#define	CRLF2 "\r\n\r\n"
 #define	CONTLEN "Content-Length: "
 #define	CONNECTION "Connection: keep-alive"
 #define COOKIE "Cookie: "
@@ -32,13 +31,13 @@ std::string	Request::parse(void)
 	std::string						length;
 
 	if (this->_header.size() < 26)
-		return ("400 Bad Request");
+		return ("400 Bad Request1");
 	it = std::search(this->_header.begin(), this->_header.end(), CRLF, &CRLF[2]);
 	line = std::string(this->_header.begin(), it);
 	if (line.empty())
-		return ("400 Bad Request");
+		return ("400 Bad Request2");
 	if (!this->searchServ())
-		return ("400 Bad Request");
+		return ("400 Bad Request3");
 	root = this->_serv.getRoot();
 	this->_method = line.substr(0, line.find(' '));
 	if (this->_method != "GET" && this->_method != "POST" && this->_method != "DELETE")
@@ -46,7 +45,7 @@ std::string	Request::parse(void)
 	pos = this->_method.length() + 1;
 	this->_filename = line.substr(pos, (line.find(' ', pos) - (pos)));
 	if (this->_filename.empty())
-		return ("400 Bad Request");
+		return ("400 Bad Request4");
 	else if (this->_filename.find("..") != std::string::npos)
 		return ("403 Forbidden");
 	this->_filepath = "Servers/" + root + '/' + this->_filename;
@@ -74,9 +73,9 @@ std::string	Request::parse(void)
 		this->_cookie = std::string(it + 8, ite);
 	}
 	if (std::search(this->_header.begin(), this->_header.end(), CONNECTION, &CONNECTION[22]) == this->_header.end())
-		this->_client.setKeepAlive(false);
+		this->_client->setKeepAlive(false);
 	else
-		this->_client.setKeepAlive(true);
+		this->_client->setKeepAlive(true);
 	return (this->checkLocation());
 }
 
@@ -88,15 +87,12 @@ bool	Request::searchServ()
 	std::string					port;
 
 	host = "\r\nHost: ";
-	it = this->_header.end();
 	it = std::search(this->_header.begin(), this->_header.end(), host.begin(), host.end());
 	if (it == this->_header.end())
 		return (false);
 	ite = std::search(it + 2, this->_header.end(), CRLF, &CRLF[2]);
 	host = std::string(it + 8, ite);
-	if (host.empty())
-		return (false);
-	if (host.find(':') == std::string::npos || host.find(':') == 0)
+	if (host.empty() || host.find(':') == std::string::npos || host.find(':') == 0)
 		return (false);
 	this->_name = host.substr(0, host.find(':'));
 	if (this->_name.empty())
@@ -106,7 +102,7 @@ bool	Request::searchServ()
 		return (false);
 	try
 	{
-		this->_serv = this->_client.getManager()->getServ(this->_name, std::atoi(port.c_str()));
+		this->_serv = this->_client->getManager()->getServ(this->_name, std::atoi(port.c_str()));
 	}
 	catch (const std::exception &e)
 	{

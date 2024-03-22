@@ -100,7 +100,7 @@ int	Request::processing(void)
 		std::string tmp;
 
 		if (this->_status == "400 Bad Request")
-			this->_client.setKeepAlive(false);
+			this->_client->setKeepAlive(false);
 		if (this->_status != "301 Moved Permanently")
 			tmp = this->error();
 		if (tmp != "102 Processing")
@@ -125,7 +125,7 @@ void	Request::processCGI(void)
 		{
 			env.push_back("HTTP_COOKIE=" + this->_cookie);
 			env.push_back("REQUEST_METHOD=" + this->_method);
-			this->_cgi = new Cgi(*this->_client.getManager(), env);
+			this->_cgi = new Cgi(*this->_client->getManager(), env);
 		}
 		bytes = this->_body.size();
 		if (bytes >= 4096)
@@ -159,7 +159,7 @@ void	Request::processCGI(void)
 	}
 	catch (const std::exception &e)
 	{
-		std::cerr << "[-] Couldn't execute a CGI for client (fd " << this->_client.getFD() << ") on port " << this->_client.getPort() << "\n" << std::endl;
+		std::cerr << "[-] Couldn't execute a CGI for client (fd " << this->_client->getFD() << ") on port " << this->_client->getPort() << "\n" << std::endl;
 		this->_status = "500 Internal Server Error";
 	}
 }
@@ -171,7 +171,7 @@ int	Request::writing(void)
 	len = this->_response.size();
 	if (len > 4096)
 		len = 4096;
-	if (send(this->_client.getFD(), this->_response.data(), len, 0) <= 0)
+	if (send(this->_client->getFD(), this->_response.data(), len, 0) <= 0)
 	{
 		errno = 0;
 		this->clear();

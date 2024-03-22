@@ -48,7 +48,6 @@ class Manager
 	// Exceptions
 		class SigintException : public std::exception { };
 	// Getters
-		std::map<int, int>			&getSockets(void);
 		Server						getServ(std::string name, int port);
 	// Functions
 		void						defaultconfig(void);

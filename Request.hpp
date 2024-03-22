@@ -34,8 +34,8 @@ class Request
 {
 	public:
 	// Constructors and Destructor
-		Request(Client &cl);
-		Request(Client &cl, Request *rhs);
+		Request(Client *cl);
+		Request(Client *cl, Request *rhs);
 		~Request(void);
 	// Functions
 		int															reader(void);
@@ -45,7 +45,7 @@ class Request
 	private:
 	// Attributes
 		int															_errno;
-		Client														&_client;
+		Client														*_client;
 		Server														_serv;
 		// States
 		bool														_inparse;

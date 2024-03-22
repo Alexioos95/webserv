@@ -111,22 +111,25 @@ std::string	Request::get(void)
 	char			buffer[4096];
 	ssize_t			bytes;
 
-	bytes = read(this->_fdfile, buffer, 4096);
-	if (bytes < 0)
+	if (this->_fdfile != -1)
 	{
-		errno = 0;
-		close(this->_fdfile);
-		this->_fdfile = -1;
-		this->_bodyresponse.erase(this->_bodyresponse.begin(), this->_bodyresponse.end());
-		return ("500 Internal Server Error");
-	}
-	this->_bodyresponse.insert(this->_bodyresponse.end(), &buffer[0], &buffer[bytes]);
-	this->_contentlength = this->_contentlength + bytes;
-	if (bytes < 4096)
-	{
-		close(this->_fdfile);
-		this->_fdfile = -1;
-		return ("200 OK");
+		bytes = read(this->_fdfile, buffer, 4096);
+		if (bytes < 0)
+		{
+			errno = 0;
+			close(this->_fdfile);
+			this->_fdfile = -1;
+			this->_bodyresponse.erase(this->_bodyresponse.begin(), this->_bodyresponse.end());
+			return ("500 Internal Server Error");
+		}
+		this->_bodyresponse.insert(this->_bodyresponse.end(), &buffer[0], &buffer[bytes]);
+		this->_contentlength = this->_contentlength + bytes;
+		if (bytes < 4096)
+		{
+			close(this->_fdfile);
+			this->_fdfile = -1;
+			return ("200 OK");
+		}
 	}
 	return ("102 Processing");
 }
@@ -139,8 +142,8 @@ std::string	Request::post(void)
 
 	len = this->_body.size();
 	i = len;
-	if (i > 4096)
-		i = 4096;
+	if (i > 2048)
+		i = 2048;
 	bytes = write(this->_fdfile, this->_body.data(), i);
 	errno = 0;
 	this->_body.erase(this->_body.begin(), this->_body.begin() + i);
@@ -174,8 +177,8 @@ std::string	Request::multipost(void)
 	it = this->_files.begin();
 	len = (*it).second.size();
 	i = len;
-	if (i > 4096)
-		i = 4096;
+	if (i > 2048)
+		i = 2048;
 	bytes = write(this->_fdfile, (*it).second.data(), i);
 	(*it).second.erase((*it).second.begin(), (*it).second.begin() + i);
 	if (bytes <= 0)
@@ -247,7 +250,6 @@ std::string	Request::error(void)
 		std::string										root;
 		std::string										error;
 
-		this->_inerror = true;
 		m = this->_serv.getErrors();
 		it = m.begin();
 		error = this->_status.substr(0, 3);
@@ -267,6 +269,7 @@ std::string	Request::error(void)
 			}
 			it++;
 		}
+		this->_inerror = true;
 		if (it == m.end())
 		{
 			this->generateError();
@@ -321,12 +324,12 @@ void	Request::buildResponse(void)
 			str = str + "Content-Type: text/html\r\n";
 	}
 	str = str + "Cache-Control: no-cache, must-revalidate\r\n";
-	if (this->_client.keepAlive())
+	if (this->_client->keepAlive())
 		str = str + "Connection: keep-alive\r\n";
 	else
 		str = str + "Connection: closed\r\n";
-	std::cout << "[*] Response's header sent on port " << this->_client.getPort();
-	std::cout << " (fd " << this->_client.getFD() << ")\n" << str << std::endl;
+	std::cout << "[*] Response's header sent on port " << this->_client->getPort();
+	std::cout << " (fd " << this->_client->getFD() << ")\n" << str << std::endl;
 	str = str + "\r\n";
 	this->_response.insert(this->_response.begin(), str.begin(), str.end());
 	if (!this->_bodyresponse.empty())
@@ -441,40 +444,40 @@ std::string	Request::getMime(void)
 
 void	Request::clear(void)
 {
-	std::vector<char>	tmp;
+	// std::vector<char>	tmp;
 
-	ft_memset(&this->_stat, 0, sizeof(this->_stat));
+	// ft_memset(&this->_stat, 0, sizeof(this->_stat));
 	this->_inparse = true;
 	this->_inprocess = false;
 	this->_inerror = false;
 	this->_inbuild = false;
 	this->_inwrite = false;
-	this->_request = tmp;
-	this->_header = tmp;
-	this->_body = tmp;
-	this->_headerresponse = tmp;
-	this->_bodyresponse = tmp;
-	this->_response = tmp;
-	this->_status = "";
-	this->_name = "";
-	this->_method = "";
-	this->_filename = "";
-	this->_filepath = "";
+	// this->_request = tmp;
+	// this->_header = tmp;
+	// this->_body = tmp;
+	// this->_headerresponse = tmp;
+	// this->_bodyresponse = tmp;
+	// this->_response = tmp;
+	// this->_status = "";
+	// this->_name = "";
+	// this->_method = "";
+	// this->_filename = "";
+	// this->_filepath = "";
 	if (this->_fdfile != -1)
 		close(this->_fdfile);
 	this->_fdfile = -1;
-	this->_contentlength = 0;
-	this->_maxcontentlength = -1;
-	this->_multi = false;
-	this->_boundary = "";
-	this->_files.erase(this->_files.begin(), this->_files.end());
-	this->_postsuccess = false;
-	this->_iscgi = false;
-	this->_cookie = "";
-	this->_dir = "";
-	this->_autoindex = false;
-	this->_redirect = "";
-	this->_redirected = 0;
-	this->_client.setToRead(true);
-	this->_client.actualizeTime();
+	// this->_contentlength = 0;
+	// this->_maxcontentlength = -1;
+	// this->_multi = false;
+	// this->_boundary = "";
+	// this->_files.erase(this->_files.begin(), this->_files.end());
+	// this->_postsuccess = false;
+	// this->_iscgi = false;
+	// this->_cookie = "";
+	// this->_dir = "";
+	// this->_autoindex = false;
+	// this->_redirect = "";
+	// this->_redirected = 0;
+	this->_client->actualizeTime();
+	this->_client->setToRead(true);
 }
