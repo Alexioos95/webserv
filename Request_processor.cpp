@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/21 09:49:09 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/25 10:50:09 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/25 12:06:19 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,18 +52,17 @@ std::string	Request::openf(void)
 
 std::string	Request::del(void)
 {
-	const char	*str;
-	std::string	dir;
+	struct stat st;
 	std::string	cmd;
 
-	str = this->_filepath.c_str();
-	dir = this->_filepath.substr(0, this->_filepath.find_last_of("/") + 1);
-	cmd = "rm -rf " + this->_filepath;
-	if (access(str, F_OK) == -1)
+	ft_memset(&st, 0, sizeof(st));
+	if (access(this->_filepath.c_str(), F_OK) == -1)
 		return ("404 Not Found");
-	else if (access(dir.c_str(), W_OK | X_OK) == -1)
+	if (stat(this->_filepath.c_str(), &st) == -1)
+		return ("500 Internal Server Error");
+	if (S_ISDIR(st.st_mode))
 		return ("403 Forbidden");
-	if (std::system(cmd.c_str()) != 0)
+	if (unlink(this->_filepath.c_str()) == -1)
 		return ("500 Internal Server Error");
 	return ("200 OK");
 }
@@ -71,21 +70,20 @@ std::string	Request::del(void)
 std::string	Request::create(void)
 {
 	std::string	dir;
-	std::string	cmd;
 	std::string	status;
 
 	dir = this->_filepath.substr(0, this->_filepath.find_last_of('/'));
-	cmd = "mkdir -p -m 755 " + dir;
 	if (access(this->_filepath.c_str(), F_OK) != -1)
 	{
 		errno = 0;
 		return ("409 Conflict");
 	}
-	if (access(dir.c_str(), F_OK) == -1 && std::system(cmd.c_str()) != 0 && errno != EEXIST)
+	if (access(dir.c_str(), F_OK) == -1 && mkdir(dir.c_str(), 0755) != 0 && errno != EEXIST)
 	{
 		errno = 0;
 		return ("500 Internal Server Error");
 	}
+	errno = 0;
 	this->_fdfile = open(this->_filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
 	if (this->_fdfile == -1)
 	{
@@ -205,7 +203,7 @@ void	Request::createFilesMultipost(void)
 	std::string															path;
 
 	cmd = "mkdir -p -m 755 " + this->_filepath;
-	if (this->_files.empty() || (access(this->_filepath.c_str(), F_OK) == -1 && std::system(cmd.c_str()) != 0 && errno != EEXIST))
+	if (this->_files.empty() || (access(this->_filepath.c_str(), F_OK) == -1 && mkdir(this->_filepath.c_str(), 0777) != 0 && errno != EEXIST))
 	{
 		errno = 0;
 		this->_status = "500 Internal Server Error";

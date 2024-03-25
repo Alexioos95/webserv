@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 11:15:58 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/25 10:47:25 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/25 12:03:38 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -138,8 +138,6 @@ std::string	Request::checkLocation(void)
 			else
 				this->_filename = l.getDirPost().second + '/' + this->_filename;
 		}
-		else
-			this->_filename.resize(this->_filename.find_last_of('/'));
 		this->_filepath = "Servers/" + this->_serv.getRoot() + '/' + this->_filename;
 	}
 	if (l.getAlias().first)
