@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/18 12:20:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/25 12:03:01 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/25 13:28:23 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -211,6 +211,61 @@ void	Manager::defaultconfig(void)
 	this->_servs.push_back(s1);
 	this->_servs.push_back(s2);
 	this->_servs.push_back(s3);
+	std::cout << std::endl;
+}
+
+void	Manager::parse(char *config)
+{
+	std::vector<Data>			v;
+	std::vector<Data>::iterator	it;
+
+	try
+	{
+		v = parsing(config);
+		it = v.begin();
+		while (it != v.end())
+		{
+			try
+			{
+				if ((*it).name == "form.org")
+				{
+					std::vector<Location>::iterator	iter;
+					iter = (*it).locations.begin();
+					while (iter != (*it).locations.end())
+					{
+						std::cout << (*iter).getPath() << std::endl;
+						std::cout << (*iter).getIndex().first << std::endl;
+						std::cout << (*iter).getIndex().second << std::endl;
+						std::cout << (*iter).getDirPost().first << std::endl;
+						std::cout << (*iter).getDirPost().second << std::endl;
+						std::cout << (*iter).getReturn().first << std::endl;
+						std::cout << (*iter).getReturn().second << std::endl;
+						std::cout << (*iter).getAlias().first << std::endl;
+						std::cout << (*iter).getAlias().second << std::endl;
+						iter++;
+					}
+				}
+				Server	s((*it).name, (*it).root, (*it).ports, (*it).errors, (*it).locations, (*it).bodymax, this->_sockets);
+				this->_servs.push_back(s);
+			}
+			catch(const std::exception& e)
+			{
+				;
+			}
+			it++;
+		}
+		if (this->_servs.empty())
+		{
+			std::cerr << "[-] No server are running. Shutting down the program...\n" << std::endl;
+			this->shutdown(true);
+			throw (SigintException());
+		}
+	}
+	catch (const std::exception &e)
+	{
+		std::cerr << "[!] Critical error occured while parsing the config file: " << e.what() << std::endl;
+		throw (SigintException());
+	}
 	std::cout << std::endl;
 }
 

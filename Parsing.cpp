@@ -39,7 +39,7 @@ Location parseLocation(std::string prevLoc)
     indexEnd = prevLoc.find_last_not_of(" \t", indexEnd);
     if (indexEnd > prevLoc.size())
         throw std::invalid_argument(prevLoc);
-    loc.path = prevLoc.substr(index, indexEnd);
+    loc.path = prevLoc.substr(index, indexEnd - (index?index:1));
     //std::cout<<"index == "<<index<<"index end == "<<indexEnd<<"locPath = "<<loc.path<<std::endl;
     index = prevLoc.find_first_of("{", indexEnd);
     if (index > prevLoc.size())
@@ -75,7 +75,7 @@ Location parseLocation(std::string prevLoc)
         // {
         // //    indexEnd = prevLoc.find_first_of("}", index);
         // //    std::cout<<"index == "<<index<<" indexEnd == "<<indexEnd<<" test = "<<prevLoc.substr(index, indexEnd - index)<<std::endl;
-            
+
         // }
         //std::cout<<"avant index = "<<index<<std::endl;
         //std::cout<<"avant index End = "<<indexEnd<<std::endl;
@@ -106,7 +106,7 @@ Location parseLocation(std::string prevLoc)
                 loc.cgi = true;
                 break;
             }
-            case autoindex:
+            case _autoindex:
             {
                 loc.autoindex = true;
                 break;
@@ -125,7 +125,7 @@ Location parseLocation(std::string prevLoc)
                 std::cout<<"dirpost == "<<prevLoc.substr(indexStart, indexEnd - indexStart)<<std::endl;
                 loc.dirpost.second = prevLoc.substr(indexStart, indexEnd - indexStart);
                 std::cout<<"dirpost second == "<<loc.dirpost.second<<std::endl;
-                if (!loc.index.second.empty())
+                if (!loc.dirpost.second.empty())
                     loc.dirpost.first = true ;
                 break;
             }
@@ -134,7 +134,7 @@ Location parseLocation(std::string prevLoc)
                 std::cout<<"ret == "<<prevLoc.substr(indexStart, indexEnd - indexStart)<<std::endl;
                 loc.ret.second = prevLoc.substr(indexStart, indexEnd - indexStart);
                 std::cout<<"ret second == "<<loc.ret.second<<std::endl;
-                if (!loc.index.second.empty())
+                if (!loc.ret.second.empty())
                     loc.ret.first = true ;
                 break;
             }
@@ -143,7 +143,7 @@ Location parseLocation(std::string prevLoc)
                 std::cout<<"alias == "<<prevLoc.substr(indexStart, indexEnd - indexStart)<<std::endl;
                 loc.alias.second = prevLoc.substr(indexStart, indexEnd - indexStart);
                 std::cout<<"alias second == "<<loc.alias.second<<std::endl;
-                if (!loc.index.second.empty())
+                if (!loc.alias.second.empty())
                     loc.alias.first = true ;
                 break;
             }
@@ -195,7 +195,7 @@ Location parseLocation(std::string prevLoc)
         index += 1;
     }
     // std::cout<<"char == "<<prevLoc[index]<<std::endl;
-    std::cout<<"path = "<<loc.path<<"\n get == " <<loc.get<<"\n post = " <<loc.post<<"\n del == "<<loc.del<<"\n cgi == "<< loc.cgi<<"\n autoindex == "<< loc.autoindex <<"\n index first == "<< loc.index.first<<"\n index second == "<< loc.index.second <<"\n dipost first == "<< loc.dirpost.first<<"\n dirpost second == "<< loc.dirpost.second <<"\n ret first == "<< loc.ret.first<< " ret second == "<<loc.ret.second<<" \nalias first ==  "<< loc.alias.first<<"alias second == "<< loc.alias.second<<"\n\n\n"<<std::endl;
+    std::cout<<"path ="<<loc.path<<"\n get == " <<loc.get<<"\n post = " <<loc.post<<"\n del == "<<loc.del<<"\n cgi == "<< loc.cgi<<"\n autoindex == "<< loc.autoindex <<"\n index first == "<< loc.index.first<<"\n index second == "<< loc.index.second <<"\n dipost first == "<< loc.dirpost.first<<"\n dirpost second == "<< loc.dirpost.second <<"\n ret first == "<< loc.ret.first<< " ret second == "<<loc.ret.second<<"\nalias first ==  "<< loc.alias.first<<"alias second == "<< loc.alias.second<<"\n\n\n"<<std::endl;
     Location res(loc.path, loc.get, loc.post, loc.del, loc.cgi, loc.autoindex, loc.index, loc.dirpost, loc.ret, loc.alias);
     return (res);
 }
@@ -221,7 +221,6 @@ int addToServer(Data &servData, size_t &index, const std::string &content)
     const char  *serverInfo[] = {"server_name", "listen", "root", "body_size", "location", "error", NULL};
     size_t      indexEnd = 0, indexStart;
     size_t      i;
-    int         c = 0;
     //if differend de server name cat sinon quiter si deja def
     while (index <= content.size() && content[index] != '}')
     {
@@ -260,7 +259,7 @@ int addToServer(Data &servData, size_t &index, const std::string &content)
                 else
                     return (0);
             }
-            case listen:
+            case _listen:
             {
                 servData.listen += " " + content.substr(indexStart, indexEnd - indexStart);
                // std::cout<<"listen = "<<servData.listen<<std::endl;
@@ -268,7 +267,7 @@ int addToServer(Data &servData, size_t &index, const std::string &content)
             }
             case root:
             {
-                servData.root += " " + content.substr(indexStart, indexEnd - indexStart);
+                servData.root = content.substr(indexStart, indexEnd - indexStart);
                // std::cout<<"root = "<<servData.root<<std::endl;
                 break;
             }
@@ -277,6 +276,7 @@ int addToServer(Data &servData, size_t &index, const std::string &content)
                 if (servData.body.empty())
                 {
                     servData.body = content.substr(indexStart, indexEnd - indexStart);
+					servData.bodymax = strtod(servData.body.c_str(), NULL);
                    // std::cout<<"body = "<<servData.body<<std::endl;
                     break;
                 }
@@ -296,7 +296,9 @@ int addToServer(Data &servData, size_t &index, const std::string &content)
                 //std::cout<<<<std::end;
                 //servData.loc.push_back(getLocation(index, content, indexEnd));
                 //servData.locations.push_back(parseLocation(servData.loc[0]));
-                servData.locations.push_back(parseLocation(getLocation(index, content, indexEnd)));
+				std::string s = getLocation(index, content, indexEnd);
+				std::cout<<"location = "<<s<<std::endl;
+                servData.locations.push_back(parseLocation(s));
                 break;
             }
             case error:
@@ -335,10 +337,10 @@ int addToServer(Data &servData, size_t &index, const std::string &content)
     index = content.find_first_not_of(" \t", index);
     if (index > content.size())
     {
-        std::cout<<"char == "<<content[index]<<std::endl; 
+        std::cout<<"char == "<<content[index]<<std::endl;
         return (0);
     }
-    //std::cout<<"char == "<<content[index]<<std::endl; 
+    //std::cout<<"char == "<<content[index]<<std::endl;
     return (1);
 }
 
@@ -366,7 +368,7 @@ bool getData(std::string &content, Data &servData, size_t &index)
             if (content[index - 1] == '{')
             {
                 status = SERVER;
-                break;    
+                break;
             }
         }
         index++;
@@ -389,7 +391,7 @@ bool getData(std::string &content, Data &servData, size_t &index)
         if (content[index] == '}')
             status--;
         //std::cout<<"status == "<<status<<std::endl;
-        if (status == OUTSIDE) 
+        if (status == OUTSIDE)
             return (true);
         //std::cout<<"ici5"<<std::endl;
     }
@@ -403,7 +405,7 @@ void    clearData(Data &data)
     data.ports.clear();
     data.listen.clear();
     data.body.clear();
-   // data.locations.clear();
+    data.locations.clear();
     data.error.clear();
     data.loc.clear();
     data.bodymax = 0;
@@ -456,31 +458,59 @@ std::vector<Data> parsing(const char *filename)
     return (serveurs);
 }
 
-int main()
-{
-    try
-    {
-        std::vector<Data> t = parsing("testconfig");
-        if (t.empty())
-            std::cout<<"youhou"<<std::endl;
-        else
-        {
-            for (int i = 0; i<t.size();i++)
-            {
-                std::cout<<"server["<<i<<"] name "<<t[i].name<<std::endl;
-                for(int j = 0; j < t[i].ports.size(); j++)
-                    std::cout<<"server["<<i<<"] port["<<j<<"] "<<t[i].ports[j]<<", "<<std::endl;
-                std::cout<<"server["<<i<<"] root "<<t[i].root<<std::endl;
-                std::cout<<"server["<<i<<"] body "<<t[i].body<<std::endl;
-                for(int j = 0; j < t[i].loc.size(); j++)
-                    std::cout<<"server["<<i<<"] location["<<j<<"] "<<t[i].loc[j]<<std::endl;
-                for(int j = 0; j < t[i].error.size(); j++)
-                    std::cout<<"server["<<i<<"] error["<<j<<"] "<<t[i].error[j]<<std::endl;
-            }
-        }
-    }
-    catch(std::exception &e)
-    {
-        std::cout<<e.what()<<std::endl;
-    }
-}
+// int main()
+// {
+//     try
+//     {
+//         std::vector<Data> t = parsing("testconfig");
+//         if (t.empty())
+//             std::cout<<"youhou"<<std::endl;
+//         else
+//         {
+//             for (int i = 0; i<t.size();i++)
+//             {
+//                 std::cout<<"server["<<i<<"] name "<<t[i].name<<std::endl;
+//                 for(int j = 0; j < t[i].ports.size(); j++)
+//                     std::cout<<"server["<<i<<"] port["<<j<<"] "<<t[i].ports[j]<<", "<<std::endl;
+//                 std::cout<<"server["<<i<<"] root "<<t[i].root<<std::endl;
+//                 std::cout<<"server["<<i<<"] body "<<t[i].body<<std::endl;
+//                 for(int j = 0; j < t[i].loc.size(); j++)
+//                     std::cout<<"server["<<i<<"] location["<<j<<"] "<<t[i].loc[j]<<std::endl;
+//                 for(int j = 0; j < t[i].error.size(); j++)
+//                     std::cout<<"server["<<i<<"] error["<<j<<"] "<<t[i].error[j]<<std::endl;
+//             }
+//         }
+//     }
+//     catch(std::exception &e)
+//     {
+//         std::cout<<e.what()<<std::endl;
+//     }
+// }
+//  main()
+// {
+//     try
+//     {
+//         std::vector<Data> t = parsing("testconfig");
+//         if (t.empty())
+//             std::cout<<"youhou"<<std::endl;
+//         else
+//         {
+//             for (int i = 0; i<t.size();i++)
+//             {
+//                 std::cout<<"server["<<i<<"] name "<<t[i].name<<std::endl;
+//                 for(int j = 0; j < t[i].ports.size(); j++)
+//                     std::cout<<"server["<<i<<"] port["<<j<<"] "<<t[i].ports[j]<<", "<<std::endl;
+//                 std::cout<<"server["<<i<<"] root "<<t[i].root<<std::endl;
+//                 std::cout<<"server["<<i<<"] body "<<t[i].body<<std::endl;
+//                 for(int j = 0; j < t[i].loc.size(); j++)
+//                     std::cout<<"server["<<i<<"] location["<<j<<"] "<<t[i].loc[j]<<std::endl;
+//                 for(int j = 0; j < t[i].error.size(); j++)
+//                     std::cout<<"server["<<i<<"] error["<<j<<"] "<<t[i].error[j]<<std::endl;
+//             }
+//         }
+//     }
+//     catch(std::exception &e)
+//     {
+//         std::cout<<e.what()<<std::endl;
+//     }
+// }

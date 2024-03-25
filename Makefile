@@ -6,7 +6,7 @@
 #    By: apayen <apayen@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/10/17 14:41:49 by apayen            #+#    #+#              #
-#    Updated: 2024/03/21 13:19:33 by apayen           ###   ########.fr        #
+#    Updated: 2024/03/25 12:22:27 by apayen           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -16,6 +16,7 @@ DIR = build
 SRC = 	$(addprefix $(DIR)/,	\
 		main.cpp				\
 		Manager.cpp				\
+		Parsing.cpp				\
 		Server.cpp				\
 		Client.cpp				\
 		Request.cpp				\

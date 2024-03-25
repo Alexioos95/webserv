@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 11:15:58 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/25 12:03:38 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/25 13:23:45 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -163,6 +163,10 @@ std::string	Request::checkLocation(void)
 			{
 				this->_filename = l.getIndex().second;
 				this->_filepath = "Servers/" + this->_serv.getRoot() + '/' + this->_filename;
+				std::cout << this->_filepath << std::endl;
+				std::cout << this->_filepath << std::endl;
+				std::cout << this->_filepath << std::endl;
+				std::cout << this->_filepath << std::endl;
 			}
 			else if (l.allowAutoindex())
 				this->_autoindex = true;

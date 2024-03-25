@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:05:30 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/21 09:38:25 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/25 12:23:52 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,8 +14,6 @@
 
 int	main(int argc, char **argv)
 {
-	static_cast<void>(argv);
-	// ^ A enlever ^
 	Manager	mng;
 
 	try
@@ -25,10 +23,14 @@ int	main(int argc, char **argv)
 			std::cout << "No configuration file was given in argument. Loading default configuration...\n" << std::endl;
 			mng.defaultconfig();
 		}
-		else if (argc == 2)
-			std::cout << "Loading configuration file..." << std::endl;
-		else if (argc >= 3)
-			std::cout << "Multiple configuration files were given in argument. Only the first one will be loaded. Loading..." << std::endl;
+		else if (argc >= 2)
+		{
+			if (argc == 2)
+				std::cout << "Loading configuration file..." << std::endl;
+			else if (argc >= 3)
+				std::cout << "Multiple configuration files were given in argument. Only the first one will be loaded. Loading..." << std::endl;
+			mng.parse(argv[1]);
+		}
 		if (signal(SIGPIPE, SIG_IGN) == SIG_ERR || signal(SIGINT, sig_handler) == SIG_ERR || signal(SIGQUIT, sig_handler) == SIG_ERR)
 		{
 			std::cerr << "[!] Critical error in the program: signal: " << strerror(errno) << std::endl;

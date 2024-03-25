@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/30 08:54:55 by apayen            #+#    #+#             */
-/*   Updated: 2024/02/08 10:29:02 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/25 13:23:22 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,8 +16,9 @@
 // Constructors and Destructor
 Location::Location(void) : _get(true), _post(false), _del(false), _cgi(false), _autoindex(false)
 {
-	this->_ret = std::pair<bool, std::string>(false, "");
+	this->_index = std::pair<bool, std::string>(false, "");
 	this->_dirpost = std::pair<bool, std::string>(false, "");
+	this->_ret = std::pair<bool, std::string>(false, "");
 	this->_alias = std::pair<bool, std::string>(false, "");
 }
 

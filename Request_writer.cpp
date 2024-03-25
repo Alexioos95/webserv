@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/25 10:52:38 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/25 12:36:43 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -181,7 +181,7 @@ int	Request::writing(void)
 		this->_response.erase(this->_response.begin(), this->_response.begin() + len);
 		if (this->_response.empty())
 			return (0);
-		return (0);
+		return (1);
 	}
 	return (0);
 }

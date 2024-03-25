@@ -8,16 +8,16 @@
 #include <string.h>
 #include <limits>
 #include <cmath>
-#include "webserv/Location.hpp"
+#include "Location.hpp"
 
 #define MAX(ARG) std::numeric_limits<ARG>::
 
 enum state {OUTSIDE, SERVER, LOCATION};
-enum param {server_name, listen, root, body_size, location, error};
-enum locparam {cgi, autoindex, _index,dir_post , ret, alias, method};
+enum param {server_name, _listen, root, body_size, location, error};
+enum locparam {cgi, _autoindex, _index,dir_post , ret, alias, method};
 
 typedef struct DataLoc
-{       
+{
     std::string path;
     bool get;
     bool post;
@@ -31,7 +31,7 @@ typedef struct DataLoc
 }DataLoc;
 
 typedef struct Data
-{       
+{
     std::string name;
     std::string root;
     std::string listen;

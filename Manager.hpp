@@ -34,6 +34,8 @@
 # include <sys/types.h>
 # include <sys/select.h>
 
+# include "Parsing.hpp"
+
 extern bool g_sigint;
 
 class Server;
@@ -51,6 +53,7 @@ class Manager
 		Server						getServ(std::string name, int port);
 	// Functions
 		void						defaultconfig(void);
+		void						parse(char *config);
 		void						run(void);
 		void						shutdown(bool delcgi);
 
