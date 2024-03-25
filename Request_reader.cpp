@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 11:14:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/25 10:08:03 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/25 11:54:11 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,10 +52,10 @@ void	Request::fillHeader(std::vector<char>::iterator pos, int bytes)
 
 	this->_header.insert(this->_header.end(), this->_request.begin(), pos + 4);
 	this->_request.erase(this->_request.begin(), pos + 4);
+	std::cout << "[*] Header of client (fd " << this->_client->getFD() << ") on port " << this->_client->getPort() << "\n"; printvector(this->_header, 2);
 	pos = std::search(this->_header.begin(), this->_header.end(), CONTLEN, &CONTLEN[16]);
 	if (pos == this->_header.end())
 	{
-		std::cout << "[*] Header of client (fd " << this->_client->getFD() << ") on port " << this->_client->getPort() << "\n"; printvector(this->_header, 2);
 		this->_client->setToRead(false);
 		return ;
 	}
