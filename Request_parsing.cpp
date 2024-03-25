@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 11:15:58 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/25 13:23:45 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/25 13:53:25 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -122,7 +122,9 @@ std::string	Request::checkLocation(void)
 	l = this->_serv.getLocation(this->_filename);
 	if (!l.allowMethod(this->_method, this->_get, this->_post, this->_del))
 		return ("405 Method Not Allowed");
-	if (this->_filename.find_last_of(".php") == this->_filename.length() - 1)
+	if (this->_filename.find_last_of(".php") == this->_filename.length() - 1 \
+		|| this->_filename.find_last_of(".ruby") == this->_filename.length() - 1 \
+		|| this->_filename.find_last_of(".py") == this->_filename.length() - 1)
 	{
 		if (!l.allowCgi() || this->_method == "DELETE")
 			return ("403 Forbiddden");

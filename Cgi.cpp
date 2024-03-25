@@ -86,7 +86,7 @@ void Cgi::launchCgi(const std::string &f)
 {
 	int cgiType;
 
-	cgiType = checkEnd(f.c_str(), ".php") ? PHP : checkEnd(f.c_str(), ".ruby") ? RUBY : ERROR;
+	cgiType = checkEnd(f.c_str(), ".php") ? PHP : checkEnd(f.c_str(), ".ruby") ? RUBY : checkEnd(f.c_str(), ".py") ? PYTHON : ERROR;
 	if (cgiType == ERROR)
 		throw std::invalid_argument("only php and ruby are handdled");
 	if (_pipeIn[1] > 0)
@@ -119,6 +119,12 @@ void Cgi::launchCgi(const std::string &f)
 			const char *args[] = {"ruby" ,f.c_str(), NULL};
 			if (execve("/usr/bin/ruby", const_cast<char* const*>(args), _env) == -1)
 				std::cerr<<"fail to execute ruby cgi"<<std::endl;
+		}
+		else if (cgiType == PYTHON)
+		{
+			const char *args[] = {"python" ,f.c_str(), NULL};
+			if (execve("/usr/bin/python", const_cast<char* const*>(args), _env) == -1)
+				std::cerr<<"fail to execute python cgi"<<std::endl;
 		}
 		exit(5);
 	}

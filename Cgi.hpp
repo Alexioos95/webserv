@@ -13,7 +13,7 @@
 #include <fcntl.h>
 #include "Manager.hpp"
 
-enum langage {ERROR, PHP, RUBY};
+enum langage {ERROR, PHP, RUBY, PYTHON};
 enum file {READ, WRITE};
 
 class Cgi{
