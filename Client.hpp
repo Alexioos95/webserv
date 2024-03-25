@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 10:41:38 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/21 09:28:14 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/25 09:48:23 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,6 +43,7 @@ class Client
 		bool				keepAlive(void) const;
 	// Functions
 		void				deleteCGI(void);
+		void				clear(void);
 		void				actualizeTime(void);
 		int					readRequest(void);
 		int					writeResponse(void);

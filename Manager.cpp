@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/18 12:20:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/21 13:31:56 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/25 10:54:41 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -226,9 +226,8 @@ void	Manager::run(void)
 		this->manageFDSets();
 		if (select(FD_SETSIZE, &this->_rset, &this->_wset, &this->_errset, &this->_timeout) == -1)
 		{
-			this->_errno = errno;
+			std::cerr << "\n[!] Critical error on select: " << strerror(errno) << ". Shutting down the program..." << std::endl;
 			errno = 0;
-			std::cerr << "\n[!] Critical error on select: " << strerror(this->_errno) << ". Shutting down the program..." << std::endl;
 			throw (SigintException());
 		}
 		this->managePorts();
@@ -351,18 +350,8 @@ void	Manager::acceptClient(int fdsock, int port)
 	fd = accept(fdsock, 0, 0);
 	if (fd == -1)
 	{
-		this->_errno = errno;
+		std::cerr << "[!] Failed to accept a new client on port " << port << ": " << strerror(errno) << "\n" << std::endl;
 		errno = 0;
-		std::cerr << "[!] Failed to accept a new client on port " << port << ": " << strerror(this->_errno) << "\n" << std::endl;
-		return ;
-	}
-	if (fcntl(fd, F_SETFL, O_NONBLOCK, FD_CLOEXEC) == -1)
-	{
-		this->_errno = errno;
-		errno = 0;
-		std::cerr << "[!] Failed setting the fd of a new client on port " << port << " to non-bloquant";
-		std::cerr << ": " << strerror(this->_errno) << ". Closing the connection...\n" << std::endl;
-		close(fd);
 		return ;
 	}
 	try
@@ -414,11 +403,14 @@ void	Manager::manageClients(void)
 			bytes = (*it).writeResponse();
 			if (bytes == 0)
 			{
-				if (!(*it).keepAlive())
+				if ((*it).keepAlive())
+					(*it).clear();
+				else
 				{
 					close(fd);
 					(*it).deleteCGI();
-					it = this->_clients.erase(it) - 1;
+					it = this->_clients.erase(it);
+					it--;
 				}
 			}
 			else if (bytes < 0)

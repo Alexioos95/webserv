@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/22 15:17:51 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/25 10:52:38 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -168,20 +168,20 @@ int	Request::writing(void)
 {
 	size_t	len;
 
-	len = this->_response.size();
-	if (len > 4096)
-		len = 4096;
-	if (send(this->_client->getFD(), this->_response.data(), len, 0) <= 0)
+	if (!this->_response.empty())
 	{
-		errno = 0;
-		this->clear();
-		return (-1);
-	}
-	this->_response.erase(this->_response.begin(), this->_response.begin() + len);
-	if (this->_response.empty())
-	{
-		this->clear();
+		len = this->_response.size();
+		if (len > 4096)
+			len = 4096;
+		if (send(this->_client->getFD(), this->_response.data(), len, 0) <= 0)
+		{
+			errno = 0;
+			return (-1);
+		}
+		this->_response.erase(this->_response.begin(), this->_response.begin() + len);
+		if (this->_response.empty())
+			return (0);
 		return (0);
 	}
-	return (1);
+	return (0);
 }

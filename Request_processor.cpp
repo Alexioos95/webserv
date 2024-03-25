@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/21 09:49:09 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/22 09:58:00 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/25 10:50:09 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -111,25 +111,22 @@ std::string	Request::get(void)
 	char			buffer[4096];
 	ssize_t			bytes;
 
-	if (this->_fdfile != -1)
+	bytes = read(this->_fdfile, buffer, 4096);
+	if (bytes < 0)
 	{
-		bytes = read(this->_fdfile, buffer, 4096);
-		if (bytes < 0)
-		{
-			errno = 0;
-			close(this->_fdfile);
-			this->_fdfile = -1;
-			this->_bodyresponse.erase(this->_bodyresponse.begin(), this->_bodyresponse.end());
-			return ("500 Internal Server Error");
-		}
-		this->_bodyresponse.insert(this->_bodyresponse.end(), &buffer[0], &buffer[bytes]);
-		this->_contentlength = this->_contentlength + bytes;
-		if (bytes < 4096)
-		{
-			close(this->_fdfile);
-			this->_fdfile = -1;
-			return ("200 OK");
-		}
+		errno = 0;
+		close(this->_fdfile);
+		this->_fdfile = -1;
+		this->_bodyresponse.erase(this->_bodyresponse.begin(), this->_bodyresponse.end());
+		return ("500 Internal Server Error");
+	}
+	this->_bodyresponse.insert(this->_bodyresponse.end(), &buffer[0], &buffer[bytes]);
+	this->_contentlength = this->_contentlength + bytes;
+	if (bytes < 4096)
+	{
+		close(this->_fdfile);
+		this->_fdfile = -1;
+		return ("200 OK");
 	}
 	return ("102 Processing");
 }
@@ -440,44 +437,4 @@ std::string	Request::getMime(void)
 	if (i < 67)
 		return (mime[i]);
 	return ("text/plain");
-}
-
-void	Request::clear(void)
-{
-	// std::vector<char>	tmp;
-
-	// ft_memset(&this->_stat, 0, sizeof(this->_stat));
-	this->_inparse = true;
-	this->_inprocess = false;
-	this->_inerror = false;
-	this->_inbuild = false;
-	this->_inwrite = false;
-	// this->_request = tmp;
-	// this->_header = tmp;
-	// this->_body = tmp;
-	// this->_headerresponse = tmp;
-	// this->_bodyresponse = tmp;
-	// this->_response = tmp;
-	// this->_status = "";
-	// this->_name = "";
-	// this->_method = "";
-	// this->_filename = "";
-	// this->_filepath = "";
-	if (this->_fdfile != -1)
-		close(this->_fdfile);
-	this->_fdfile = -1;
-	// this->_contentlength = 0;
-	// this->_maxcontentlength = -1;
-	// this->_multi = false;
-	// this->_boundary = "";
-	// this->_files.erase(this->_files.begin(), this->_files.end());
-	// this->_postsuccess = false;
-	// this->_iscgi = false;
-	// this->_cookie = "";
-	// this->_dir = "";
-	// this->_autoindex = false;
-	// this->_redirect = "";
-	// this->_redirected = 0;
-	this->_client->actualizeTime();
-	this->_client->setToRead(true);
 }

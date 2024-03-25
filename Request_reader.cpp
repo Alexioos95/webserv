@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 11:14:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/22 08:57:07 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/25 10:08:03 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 #include "Client.hpp"
 
 #define	CRLF "\r\n"
-#define	CRLFX "\r\n\r\n"
+#define	CRLF2 "\r\n\r\n"
 #define	CONTLEN "Content-Length: "
 #define FILENAME "filename=\""
 #define MULTI "\r\nContent-Type: multipart/form-data"
@@ -35,10 +35,10 @@ int	Request::reader(void)
 		return (bytes);
 	}
 	this->_request.insert(this->_request.end(), &buffer[0], &buffer[bytes]);
-	pos = std::search(this->_request.begin(), this->_request.end(), CRLFX, &CRLFX[4]);
+	pos = std::search(this->_request.begin(), this->_request.end(), CRLF2, &CRLF2[4]);
 	if (!this->_multi && (pos == this->_request.end() || this->_contentlength + bytes < this->_maxcontentlength))
 		return (bytes);
-	if (this->_request.empty() || std::search(this->_header.begin(), this->_header.end(), CRLFX, &CRLFX[4]) == this->_header.end())
+	if (this->_request.empty() || std::search(this->_header.begin(), this->_header.end(), CRLF2, &CRLF2[4]) == this->_header.end())
 		this->fillHeader(pos, bytes);
 	else
 		this->fillBody(pos, bytes);
@@ -75,7 +75,7 @@ void	Request::fillHeader(std::vector<char>::iterator pos, int bytes)
 	}
 	if (!this->_request.empty())
 	{
-		pos = std::search(this->_request.begin(), this->_request.end(), CRLFX, &CRLFX[4]);
+		pos = std::search(this->_request.begin(), this->_request.end(), CRLF2, &CRLF2[4]);
 		this->fillBody(pos, bytes);
 	}
 }
@@ -133,7 +133,7 @@ void	Request::parseMultiEncoded(void)
 		if (ite == this->_request.end())
 			break ;
 		name = std::string(it + 10, ite - 1);
-		it = std::search(this->_request.begin(), this->_request.end(), CRLFX, &CRLFX[4]);
+		it = std::search(this->_request.begin(), this->_request.end(), CRLF2, &CRLF2[4]);
 		if (it == this->_request.end())
 			break ;
 		this->_request.erase(this->_request.begin(), it + 4);

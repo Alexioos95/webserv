@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/22 09:54:54 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/25 10:55:39 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,7 +57,6 @@ class Request
 		std::vector<char>											_request;
 		std::vector<char>											_header;
 		std::vector<char>											_body;
-		std::vector<char>											_headerresponse;
 		std::vector<char>											_bodyresponse;
 		std::vector<char>											_response;
 		// Parse
@@ -116,7 +115,6 @@ class Request
 		std::string													getMethods(void);
 		std::string													getTime(std::time_t time);
 		std::string													getMime(void);
-		void														clear(void);
 };
 
 void		*ft_memset(void *s, int c, size_t n);

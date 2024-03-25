@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 11:15:58 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/22 15:18:03 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/25 10:47:25 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,13 +31,13 @@ std::string	Request::parse(void)
 	std::string						length;
 
 	if (this->_header.size() < 26)
-		return ("400 Bad Request1");
+		return ("400 Bad Request");
 	it = std::search(this->_header.begin(), this->_header.end(), CRLF, &CRLF[2]);
 	line = std::string(this->_header.begin(), it);
 	if (line.empty())
-		return ("400 Bad Request2");
+		return ("400 Bad Request");
 	if (!this->searchServ())
-		return ("400 Bad Request3");
+		return ("400 Bad Request");
 	root = this->_serv.getRoot();
 	this->_method = line.substr(0, line.find(' '));
 	if (this->_method != "GET" && this->_method != "POST" && this->_method != "DELETE")
@@ -45,7 +45,7 @@ std::string	Request::parse(void)
 	pos = this->_method.length() + 1;
 	this->_filename = line.substr(pos, (line.find(' ', pos) - (pos)));
 	if (this->_filename.empty())
-		return ("400 Bad Request4");
+		return ("400 Bad Request");
 	else if (this->_filename.find("..") != std::string::npos)
 		return ("403 Forbidden");
 	this->_filepath = "Servers/" + root + '/' + this->_filename;
@@ -151,10 +151,12 @@ std::string	Request::checkLocation(void)
 	{
 		if (stat(this->_filepath.c_str(), &st) == -1)
 		{
-			this->_errno = errno;
-			errno = 0;
 			if (errno > 0 && errno != ENOENT)
+			{
+				errno = 0;
 				return ("500 Internal Server Error");
+			}
+			errno = 0;
 		}
 		if (S_ISDIR(st.st_mode))
 		{
