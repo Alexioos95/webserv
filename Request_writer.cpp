@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/25 12:36:43 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/25 15:38:28 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -126,34 +126,36 @@ void	Request::processCGI(void)
 			env.push_back("HTTP_COOKIE=" + this->_cookie);
 			env.push_back("REQUEST_METHOD=" + this->_method);
 			this->_cgi = new Cgi(*this->_client->getManager(), env);
-		}
-		bytes = this->_body.size();
-		if (bytes >= 4096)
-			bytes = 4096;
-		if (!this->_body.empty() && write(this->_cgi->getFdWrite(), this->_body.data(), bytes) <= 0)
-		{
-			errno = 0;
-			this->_body.erase(this->_body.begin(), this->_body.begin() + bytes);
-			this->_status = "500 Internal Server Error";
-			return ;
-		}
-		this->_cgi->launchCgi(this->_filepath);
-		waitpid(this->_cgi->getPid(), NULL, WNOHANG);
-		bytes = read(this->_cgi->getFdRead(), buffer, 4096);
-		if (bytes < 0)
-		{
-			errno = 0;
-			this->_response.erase(this->_response.begin(), this->_response.end());
-			this->_status = "500 Internal Server Error";
-		}
-		else
-		{
-			this->_response.insert(this->_response.end(), &buffer[0], &buffer[bytes]);
-			if (bytes < 4096)
+			bytes = this->_body.size();
+			if (bytes >= 4096)
+				bytes = 4096;
+			if (!this->_body.empty() && write(this->_cgi->getFdWrite(), this->_body.data(), bytes) <= 0)
 			{
-				this->_inprocess = false;
-				this->_inwrite = true;
-				this->delCGI();
+				errno = 0;
+				this->_body.erase(this->_body.begin(), this->_body.begin() + bytes);
+				this->_status = "500 Internal Server Error";
+				return ;
+			}
+			this->_cgi->launchCgi(this->_filepath);
+		}
+		if (waitpid(this->_cgi->getPid(), NULL, WNOHANG) > 0)
+		{
+			bytes = read(this->_cgi->getFdRead(), buffer, 4096);
+			if (bytes < 0)
+			{
+				errno = 0;
+				this->_response.erase(this->_response.begin(), this->_response.end());
+				this->_status = "500 Internal Server Error";
+			}
+			else
+			{
+				this->_response.insert(this->_response.end(), &buffer[0], &buffer[bytes]);
+				if (bytes < 4096)
+				{
+					this->_inprocess = false;
+					this->_inwrite = true;
+					this->delCGI();
+				}
 			}
 		}
 	}

@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/18 12:20:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/25 13:28:23 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/25 15:40:00 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -489,7 +489,7 @@ void	Manager::manageTimeout(void)
 	this->_timer = std::time(0);
 	while (it != this->_clients.end())
 	{
-		if (this->_timer - (*it).getTimer() > 119)
+		if (this->_timer - (*it).getTimer() > 3)
 		{
 			std::cout << "[-] A client (fd " << (*it).getFD() << ") timed out. ";
 			std::cout << "Closing the connection...\n" << std::endl;

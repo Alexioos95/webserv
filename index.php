@@ -46,7 +46,7 @@ function getLogged($test)
 			$cookie = $info[1];
 			$name = $info[1];
 			fwrite(STDERR, "date == " . $date . "\n");
-			fwrite(STDERR, "cookie == ". $cookie . "\n");		
+			fwrite(STDERR, "cookie == ". $cookie . "\n");
 			fwrite(STDERR, "name == ". $name . "\n");
 		}
 
@@ -125,7 +125,7 @@ function getLogged($test)
 		<body>
 		<div class="container">
 		<h2>hello ';
-		$body.=$name; 
+		$body.=$name;
 		fwrite(STDERR, "date = $date \n");
 		fwrite(STDERR, "date = $date \n");
 		$body.='</h2><p>still connected for '. $dateCount .' s</p></body></html>';
@@ -137,7 +137,7 @@ function getLogged($test)
 		$header .= "Allow: GET\r\n";
 		$header .= "Content-Type: text/html; charset=utf-8\r\n";
 		$header .= "Set-Cookie: auth=" . $name . '|' . $date . "; expires=" . gmdate('D, d M Y H:i:s \G\M\T', $date) . ";\r\n path=/index.php\r\n";
-		$header .= "Content-Length: " . strlen($body) . "\r\n\r\n";	
+		$header .= "Content-Length: " . strlen($body) . "\r\n\r\n";
 		fwrite(STDERR, "header == $header");
 		return ($header.$body);
 	}
@@ -243,11 +243,11 @@ function main()
 //		fwrite(STDERR, "value = $value");
 //	}
 	$truc = '';
-	fwrite(STDERR, "?????????????????\n");
+	// fwrite(STDERR, "?????????????????\n");
 	foreach ($_ENV as $key => $value) {
 		fwrite(STDERR, "Clé: $key, Valeur: $value\n");
 	}
-	
+
 	$in = file_get_contents('php://stdin');
 	// while (!feof(STDIN)) {
 	// 	$in .= fgets(STDIN);
