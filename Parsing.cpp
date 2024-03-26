@@ -190,6 +190,55 @@ std::string getLocation(size_t &index, const std::string &content, size_t &index
     return (content.substr(index, indexEnd - index));
 }
 
+bool allNum(const std::string &str) {
+    std::string::const_iterator it = str.begin();
+    while (it != str.end() && std::isdigit(*it)) {
+        ++it;
+    }
+    return !str.empty() && it == str.end();
+}
+
+std::map<std::string, std::string> parseError(const std::string &error)
+{
+    std::map<std::string, std::string> ret;
+    std::string path,  cle, value;
+    size_t indexStart = 0, indexEnd = 0;
+    indexStart = error.find_first_not_of(" \t", 0);
+    indexEnd = error.find_first_of(" \t", indexStart);
+    path = error.substr(indexStart, indexEnd - indexStart);
+    while (indexEnd < error.size() && error[indexEnd] != '{')
+        indexEnd++;
+    if (indexEnd >= error.size())
+        throw std::invalid_argument(std::string("invalid config file : ") + error);
+    indexStart = indexEnd + 1;
+    while (indexEnd < error.size() && indexStart < error.size())
+    {
+        indexStart = error.find_first_not_of(" \t", indexStart);
+        if (indexEnd >= error.size())
+            throw std::invalid_argument(std::string("invalid config file : ") + error);
+        indexEnd = error.find_first_of(" \t", indexStart);
+        if (indexEnd >= error.size())
+            throw std::invalid_argument(std::string("invalid config file : ") + error);
+        cle = error.substr(indexStart, indexEnd - indexStart);      
+        indexStart = error.find_first_not_of(" \t", indexEnd);
+        if (indexEnd >= error.size())
+            throw std::invalid_argument(std::string("invalid config file : ") + error);
+        indexEnd = error.find_first_of(" \t", indexStart);
+        if (indexEnd >= error.size())
+            throw std::invalid_argument(std::string("invalid config file : ") + error);
+        value = error.substr(indexStart, (indexEnd - 1) - indexStart); 
+        if (allNum(cle) && ret.find(cle) == ret.end())
+            ret[cle] = path + "/" + value;
+        else
+            throw std::invalid_argument("invalid file" + cle);
+        indexEnd = error.find_first_not_of(" \t", indexEnd);
+        if (indexEnd < error.size() && error[indexEnd] == '}')
+            break ;
+        indexStart = indexEnd;
+    }
+    return (ret);
+}
+
 int addToServer(Data &servData, size_t &index, const std::string &content)
 {
     const char  *serverInfo[] = {"server_name", "listen", "root", "body_size", "location", "error", NULL};
@@ -222,10 +271,7 @@ int addToServer(Data &servData, size_t &index, const std::string &content)
             case server_name:
             {
                 if (!servData.name.empty())
-                {
-                    std::cout<<servData.name<<std::endl;
                     throw std::invalid_argument("multiple definition : serve_name");
-                }
                 servData.name = content.substr(indexStart, indexEnd - indexStart);
                 break;
             }
@@ -274,7 +320,12 @@ int addToServer(Data &servData, size_t &index, const std::string &content)
                 for (; content[indexEnd] && content[indexEnd] != '{'; indexEnd++)
                     ;
                 indexEnd++;
-                servData.error.push_back(getLocation(index, content, indexEnd));
+                servData.error = getLocation(index, content, indexEnd);
+                servData.errors = parseError(servData.error);
+                std::map<std::string, std::string>::iterator it;
+                for (it = servData.errors.begin(); it != servData.errors.end(); ++it) {
+                    std::cout << "Clé :" << it->first << ", Valeur :" << it->second <<"|"<< std::endl;
+                }
                 break;
             }
             default:
@@ -365,6 +416,8 @@ std::vector<Data> parsing(const char *filename)
             char *endptr;
             for (const char *str = servData.listen.c_str(); *str; str++)
             {
+                if (servData.listen.find_first_not_of(" \t", 0) == std::string::npos)
+                    throw std::invalid_argument("no port provided");
                 nb = strtod(str, &endptr);
                 if ((!std::isspace(*str) && !std::isdigit(*str)) || nb == MAX(double)infinity() ||\
                     nb > MAX(int)max() || nb < 0 || nb != std::floor(nb))
