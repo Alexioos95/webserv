@@ -57,6 +57,10 @@ void Cgi::launchCgi(const std::string &f)
 {
 	int cgiType;
 
+	if (access(f.c_str(), F_OK) == 0)
+		throw (404);
+	if (access(f.c_str(), X_OK) == 0)
+		throw (403);
 	cgiType = checkEnd(f.c_str(), ".php") ? PHP : checkEnd(f.c_str(), ".ruby") ? RUBY : checkEnd(f.c_str(), ".py") ? PYTHON : ERROR;
 	if (cgiType == ERROR)
 		throw std::invalid_argument("only php and ruby are handdled");
