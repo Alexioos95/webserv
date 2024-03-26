@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 11:15:58 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/25 13:53:25 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/26 12:20:47 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -122,12 +122,13 @@ std::string	Request::checkLocation(void)
 	l = this->_serv.getLocation(this->_filename);
 	if (!l.allowMethod(this->_method, this->_get, this->_post, this->_del))
 		return ("405 Method Not Allowed");
-	if (this->_filename.find_last_of(".php") == this->_filename.length() - 1 \
-		|| this->_filename.find_last_of(".ruby") == this->_filename.length() - 1 \
-		|| this->_filename.find_last_of(".py") == this->_filename.length() - 1)
+	if (this->_filename.length() > 4 \
+		&& (this->_filename.substr(this->_filename.length() - 4, 4) == ".php" \
+		|| this->_filename.substr(this->_filename.length() - 5, 5) == ".ruby" \
+		|| this->_filename.substr(this->_filename.length() - 3, 3) == ".py"))
 	{
 		if (!l.allowCgi() || this->_method == "DELETE")
-			return ("403 Forbiddden");
+			return ("403 Forbidden");
 		else
 			this->_iscgi = true;
 	}
@@ -165,10 +166,6 @@ std::string	Request::checkLocation(void)
 			{
 				this->_filename = l.getIndex().second;
 				this->_filepath = "Servers/" + this->_serv.getRoot() + '/' + this->_filename;
-				std::cout << this->_filepath << std::endl;
-				std::cout << this->_filepath << std::endl;
-				std::cout << this->_filepath << std::endl;
-				std::cout << this->_filepath << std::endl;
 			}
 			else if (l.allowAutoindex())
 				this->_autoindex = true;

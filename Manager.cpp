@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/18 12:20:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/26 11:16:28 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/26 12:36:44 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -205,12 +205,30 @@ void	Manager::defaultconfig(void)
 	loc3.push_back(l10);
 	loc3.push_back(l11);
 	loc3.push_back(l12);
-	Server	s1("qr.code", "./qr", vec, err1, loc1, 99999, this->_sockets);
-	Server	s2("netpractice.net", "./np/", vec2, err2, loc2, 99999, this->_sockets);
-	Server	s3("form.org", "./form/", vec3, err3, loc3, 99999, this->_sockets);
-	this->_servs.push_back(s1);
-	this->_servs.push_back(s2);
-	this->_servs.push_back(s3);
+	try
+	{
+		Server	s1("qr.code", "./qr", vec, err1, loc1, 99999, this->_sockets);
+		this->_servs.push_back(s1);
+	}
+	catch (const std::exception &e) { ; }
+	try
+	{
+		Server	s2("netpractice.net", "./np/", vec2, err2, loc2, 99999, this->_sockets);
+		this->_servs.push_back(s2);
+	}
+	catch (const std::exception &e) { ; }
+	try
+	{
+		Server	s3("form.org", "./form/", vec3, err3, loc3, 99999, this->_sockets);
+		this->_servs.push_back(s3);
+	}
+	catch (const std::exception &e) { ; }
+	if (this->_servs.empty())
+	{
+		std::cerr << "[-] No server are running. Shutting down the program...\n" << std::endl;
+		this->shutdown(true);
+		throw (SigintException());
+	}
 	std::cout << std::endl;
 }
 
@@ -471,7 +489,7 @@ void	Manager::manageTimeout(void)
 	this->_timer = std::time(0);
 	while (it != this->_clients.end())
 	{
-		if (this->_timer - (*it).getTimer() > 3)
+		if (this->_timer - (*it).getTimer() > 119)
 		{
 			std::cout << "[-] A client (fd " << (*it).getFD() << ") timed out. ";
 			std::cout << "Closing the connection...\n" << std::endl;

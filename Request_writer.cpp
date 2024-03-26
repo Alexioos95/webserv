@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/26 11:34:23 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/26 12:26:36 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -183,7 +183,7 @@ void	Request::processCGI(void)
 		if (status == 403)
 			this->_status = "403 Forbidden";
 		if (status == 404)
-			this->_status = "404 Forbidden";
+			this->_status = "404 Not Found";
 	}
 	catch (const std::exception &e)
 	{
