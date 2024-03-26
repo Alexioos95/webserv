@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request_writer.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: madaguen <madaguen@student.42.fr>          +#+  +:+       +#+        */
+/*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/26 11:02:46 by madaguen         ###   ########.fr       */
+/*   Updated: 2024/03/26 11:34:23 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -155,21 +155,6 @@ void	Request::processCGI(void)
 				status = (WEXITSTATUS(status));
 			if (status > 0)
 			{
-				this->_status = "404 Not Found";
-				return ;
-			}
-			if (status == 3)
-			{
-				this->_status = "403 Forbidden";
-				return ;
-			}
-			else if (status == 4)
-			{
-				this->_status = "404 Not Found";
-				return ;
-			}
-			else if (status == 5)
-			{
 				this->_status = "500 Internal Server Error";
 				return ;
 			}
@@ -192,6 +177,13 @@ void	Request::processCGI(void)
 				}
 			}
 		}
+	}
+	catch (int status)
+	{
+		if (status == 403)
+			this->_status = "403 Forbidden";
+		if (status == 404)
+			this->_status = "404 Forbidden";
 	}
 	catch (const std::exception &e)
 	{

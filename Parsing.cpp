@@ -373,7 +373,6 @@ std::vector<Data> parsing(const char *filename)
                 }
                 else
                 {
-                    std::vector<int>::iterator it = servData.ports.begin();
                     if (std::find(servData.ports.begin(), servData.ports.end(), nb) ==  servData.ports.end())
                         servData.ports.push_back(nb);
                 }

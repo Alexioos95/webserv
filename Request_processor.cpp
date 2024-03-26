@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/21 09:49:09 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/25 12:08:08 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/26 11:09:48 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -202,7 +202,6 @@ void	Request::createFilesMultipost(void)
 	std::string															cmd;
 	std::string															path;
 
-	cmd = "mkdir -p -m 755 " + this->_filepath;
 	if (this->_files.empty() || (access(this->_filepath.c_str(), F_OK) == -1 && mkdir(this->_filepath.c_str(), 0777) != 0 && errno != EEXIST))
 	{
 		errno = 0;

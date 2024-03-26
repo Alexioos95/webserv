@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Manager.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: madaguen <madaguen@student.42.fr>          +#+  +:+       +#+        */
+/*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/18 12:20:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/26 10:43:44 by madaguen         ###   ########.fr       */
+/*   Updated: 2024/03/26 11:16:28 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -227,24 +227,6 @@ void	Manager::parse(char *config)
 		{
 			try
 			{
-				if ((*it).name == "form.org")
-				{
-					std::vector<Location>::iterator	iter;
-					iter = (*it).locations.begin();
-					while (iter != (*it).locations.end())
-					{
-						std::cout << (*iter).getPath() << std::endl;
-						std::cout << (*iter).getIndex().first << std::endl;
-						std::cout << (*iter).getIndex().second << std::endl;
-						std::cout << (*iter).getDirPost().first << std::endl;
-						std::cout << (*iter).getDirPost().second << std::endl;
-						std::cout << (*iter).getReturn().first << std::endl;
-						std::cout << (*iter).getReturn().second << std::endl;
-						std::cout << (*iter).getAlias().first << std::endl;
-						std::cout << (*iter).getAlias().second << std::endl;
-						iter++;
-					}
-				}
 				Server	s((*it).name, (*it).root, (*it).ports, (*it).errors, (*it).locations, (*it).bodymax, this->_sockets);
 				this->_servs.push_back(s);
 			}
