@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/26 09:05:08 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/26 09:28:18 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -130,18 +130,25 @@ void	Request::processCGI(void)
 			env.push_back("FD=" + itoa(this->_client->getFD()));
 			env.push_back("PORT=" + itoa(this->_client->getPort()));
 			this->_cgi = new Cgi(*this->_client->getManager(), env);
+		}
+		if (!this->_body.empty())
+		{
 			bytes = this->_body.size();
 			if (bytes >= 4096)
 				bytes = 4096;
-			if (!this->_body.empty() && write(this->_cgi->getFdWrite(), this->_body.data(), bytes) <= 0)
+			if (write(this->_cgi->getFdWrite(), this->_body.data(), bytes) < bytes)
 			{
 				errno = 0;
-				this->_body.erase(this->_body.begin(), this->_body.begin() + bytes);
+				this->_body.erase(this->_body.begin(), this->_body.end());
 				this->_status = "500 Internal Server Error";
 				return ;
 			}
-			this->_cgi->launchCgi(this->_filepath);
+			this->_body.erase(this->_body.begin(), this->_body.begin() + bytes);
+			if (!this->_body.empty())
+				return ;
 		}
+		if (!this->_inreadcgi)
+			this->_cgi->launchCgi(this->_filepath);
 		if (this->_inreadcgi || waitpid(this->_cgi->getPid(), &status, WNOHANG) > 0)
 		{
 			if (WIFEXITED(status))
