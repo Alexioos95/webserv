@@ -222,7 +222,10 @@ int addToServer(Data &servData, size_t &index, const std::string &content)
             case server_name:
             {
                 if (!servData.name.empty())
+                {
+                    std::cout<<servData.name<<std::endl;
                     throw std::invalid_argument("multiple definition : serve_name");
+                }
                 servData.name = content.substr(indexStart, indexEnd - indexStart);
                 break;
             }
