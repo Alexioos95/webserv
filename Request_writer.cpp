@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/25 15:38:28 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/26 09:05:08 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -118,13 +118,17 @@ void	Request::processCGI(void)
 	{
 		char						buffer[4096];
 		ssize_t						bytes;
+		int							status;
 		std::vector<char>::iterator	it;
 		std::vector<std::string>	env;
 
+		status = 0;
 		if (this->_cgi == NULL)
 		{
 			env.push_back("HTTP_COOKIE=" + this->_cookie);
 			env.push_back("REQUEST_METHOD=" + this->_method);
+			env.push_back("FD=" + itoa(this->_client->getFD()));
+			env.push_back("PORT=" + itoa(this->_client->getPort()));
 			this->_cgi = new Cgi(*this->_client->getManager(), env);
 			bytes = this->_body.size();
 			if (bytes >= 4096)
@@ -138,8 +142,20 @@ void	Request::processCGI(void)
 			}
 			this->_cgi->launchCgi(this->_filepath);
 		}
-		if (waitpid(this->_cgi->getPid(), NULL, WNOHANG) > 0)
+		if (this->_inreadcgi || waitpid(this->_cgi->getPid(), &status, WNOHANG) > 0)
 		{
+			if (WIFEXITED(status))
+				status = (WEXITSTATUS(status));
+			if (status == 3)
+			{
+				this->_status = "403 Forbidden";
+				return ;
+			}
+			else if (status == 4)
+			{
+				this->_status = "404 Not Found";
+				return ;
+			}
 			bytes = read(this->_cgi->getFdRead(), buffer, 4096);
 			if (bytes < 0)
 			{
@@ -149,6 +165,7 @@ void	Request::processCGI(void)
 			}
 			else
 			{
+				this->_inreadcgi = true;
 				this->_response.insert(this->_response.end(), &buffer[0], &buffer[bytes]);
 				if (bytes < 4096)
 				{

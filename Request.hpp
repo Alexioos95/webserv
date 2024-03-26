@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/25 11:17:00 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/26 08:51:29 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,6 +50,7 @@ class Request
 		// States
 		bool														_inparse;
 		bool														_inprocess;
+		bool														_inreadcgi;
 		bool														_inerror;
 		bool														_inbuild;
 		bool														_inwrite;
