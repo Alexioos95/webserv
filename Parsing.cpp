@@ -30,7 +30,6 @@ Location parseLocation(std::string prevLoc)
     const char *locData[] = {"allow_cgi", "allow_autoindex", "index","dir_post" ,"return", "alias", "method", NULL};
 
     initLocData(loc);
-    //index = prevLoc.find_first_not_of(" \t", index);
     if (index > prevLoc.size())
         throw std::invalid_argument(prevLoc);
     indexEnd = prevLoc.find_first_of("{", index);
@@ -40,7 +39,6 @@ Location parseLocation(std::string prevLoc)
     if (indexEnd > prevLoc.size())
         throw std::invalid_argument(prevLoc);
     loc.path = prevLoc.substr(index, indexEnd - (index?index:1));
-    //std::cout<<"index == "<<index<<"index end == "<<indexEnd<<"locPath = "<<loc.path<<std::endl;
     index = prevLoc.find_first_of("{", indexEnd);
     if (index > prevLoc.size())
         throw std::invalid_argument(prevLoc);
@@ -49,100 +47,77 @@ Location parseLocation(std::string prevLoc)
     {
         index = prevLoc.find_first_not_of(" \t", index);
         indexEnd = prevLoc.find_first_of(" \t", index);
-        //indexEnd = prevLoc.find_last_not_of(" \t", indexEnd);
-       // std::cout<<"index == "<<index<<" indexEnd == "<<indexEnd<<" test = "<<prevLoc.substr(index, indexEnd - index)<<std::endl;
-       // std::cout<<"index au debut == "<<index<<"str = "<<prevLoc.c_str() + index<<std::endl;
         for (i = 0; locData[i]; i++)
         {
             if (prevLoc.compare(index, strlen(locData[i]), locData[i]) == 0)
             {
-                //std::cout<<"i == "<<i<<"indexEnd = "<<indexEnd<<"content : "<<content.c_str() + indexEnd<<std::endl;
                 index += strlen(locData[i]);
                 indexStart = prevLoc.find_first_not_of(" \t", index);
-         //       std::cout<<"i == "<<i<<"indexEnd = "<<indexEnd<<"content : "<<prevLoc.c_str() + indexEnd<<std::endl;
                 break ;
             }
         }
-        // if(i != method)
-        // {
-        //     indexEnd = prevLoc.find_first_of(";", index);
-        //     if (indexEnd > prevLoc.size() || indexStart > prevLoc.size())
-        //         throw std::invalid_argument("invalid file");
-        //     indexEnd = prevLoc.find_last_of(" \t", index);
-        //     std::cout<<"index == "<<index<<" indexEnd == "<<indexEnd<<" test = "<<prevLoc.substr(index, indexEnd - index)<<std::endl;
-        // }
-        // else
-        // {
-        // //    indexEnd = prevLoc.find_first_of("}", index);
-        // //    std::cout<<"index == "<<index<<" indexEnd == "<<indexEnd<<" test = "<<prevLoc.substr(index, indexEnd - index)<<std::endl;
-
-        // }
-        //std::cout<<"avant index = "<<index<<std::endl;
-        //std::cout<<"avant index End = "<<indexEnd<<std::endl;
         if (index >= prevLoc.size())
             throw std::invalid_argument("invalid file");
         if(i != method)
         {
-            //std::cout<<"i = "<<i<<std::endl;
             indexEnd = prevLoc.find_first_of(";", index);
             if (indexEnd > prevLoc.size() || indexStart > prevLoc.size())
                 break ;
-            //indexEnd = prevLoc.find_last_of(" \t", index);
         }
         else
         {
-          //  std::cout<<"i = "<<i<<std::endl;
             indexEnd = prevLoc.find_first_of("}", index);
             if (indexEnd > prevLoc.size() || indexStart > prevLoc.size())
                 break ;
-            //indexEnd = prevLoc.find_last_of(" \t", index);
         }
-        //std::cout<<"index = "<<index<<std::endl;
-        //std::cout<<"index End = "<<indexEnd<<std::endl;
         switch(i)
         {
             case cgi:
             {
+                if (loc.cgi)
+                    throw std::invalid_argument("multiple definition : cgi");
                 loc.cgi = true;
                 break;
             }
             case _autoindex:
             {
+                if (loc.autoindex)
+                    throw std::invalid_argument("multiple definition : autoindex");
                 loc.autoindex = true;
                 break;
             }
             case _index:
             {
-                std::cout<<"index == "<<prevLoc.substr(indexStart, indexEnd - indexStart)<<std::endl;
+                if (!loc.index.second.empty())
+                    throw std::invalid_argument("multiple definition : index");
                 loc.index.second = prevLoc.substr(indexStart, indexEnd - indexStart);
-                std::cout<<"index second == "<<loc.index.second<<std::endl;
                 if (!loc.index.second.empty())
                     loc.index.first = true ;
                 break;
             }
             case dir_post:
             {
-                std::cout<<"dirpost == "<<prevLoc.substr(indexStart, indexEnd - indexStart)<<std::endl;
+                if (!loc.dirpost.second.empty())
+                    throw std::invalid_argument("multiple definition : dirpost");
                 loc.dirpost.second = prevLoc.substr(indexStart, indexEnd - indexStart);
-                std::cout<<"dirpost second == "<<loc.dirpost.second<<std::endl;
                 if (!loc.dirpost.second.empty())
                     loc.dirpost.first = true ;
                 break;
             }
             case ret:
             {
-                std::cout<<"ret == "<<prevLoc.substr(indexStart, indexEnd - indexStart)<<std::endl;
+                if (!loc.ret.second.empty())
+                    throw std::invalid_argument("multiple definition : return");
                 loc.ret.second = prevLoc.substr(indexStart, indexEnd - indexStart);
-                std::cout<<"ret second == "<<loc.ret.second<<std::endl;
                 if (!loc.ret.second.empty())
                     loc.ret.first = true ;
                 break;
             }
             case alias:
             {
-                std::cout<<"alias == "<<prevLoc.substr(indexStart, indexEnd - indexStart)<<std::endl;
+                if (!loc.alias.second.empty())
+                    throw std::invalid_argument("multiple definition : alias");
                 loc.alias.second = prevLoc.substr(indexStart, indexEnd - indexStart);
-                std::cout<<"alias second == "<<loc.alias.second<<std::endl;
                 if (!loc.alias.second.empty())
                     loc.alias.first = true ;
                 break;
@@ -154,24 +129,28 @@ Location parseLocation(std::string prevLoc)
                 {
                     for (int m = 0; methods[m] && index < prevLoc.size(); m++)
                     {
-                        //std::cout<<"m == "<<m<<std::endl;
-                        //std::cout<<"substr == "<<prevLoc.substr(index, strlen(methods[m]))<<std::endl;
                         if (prevLoc.compare(index, strlen(methods[m]), methods[m]) == 0)
                         {
                             switch(m)
                             {
                                 case 0:
                                 {
+                                    if (loc.del == true)
+                                        throw std::invalid_argument("multiple definition : DELETE");
                                     loc.del = true;
                                     break;
                                 }
                                 case 1:
                                 {
+                                    if (loc.post == true)
+                                        throw std::invalid_argument("multiple definition : POST");
                                     loc.post = true;
                                     break;
                                 }
                                 case 2:
                                 {
+                                    if (loc.get == true)
+                                        throw std::invalid_argument("multiple definition : GET");
                                     loc.get = true;
                                     break;
                                 }
@@ -186,16 +165,11 @@ Location parseLocation(std::string prevLoc)
             default:
                 break;
         }
-    //     index = indexEnd + 1;
-    //    // std::cout<<"index a la fin == "<<index<<std::endl;
-        // index = prevLoc.find_first_of(";", indexEnd);
         index = indexEnd;
         if (index > prevLoc.size())
             break ;
         index += 1;
     }
-    // std::cout<<"char == "<<prevLoc[index]<<std::endl;
-    std::cout<<"path ="<<loc.path<<"\n get == " <<loc.get<<"\n post = " <<loc.post<<"\n del == "<<loc.del<<"\n cgi == "<< loc.cgi<<"\n autoindex == "<< loc.autoindex <<"\n index first == "<< loc.index.first<<"\n index second == "<< loc.index.second <<"\n dipost first == "<< loc.dirpost.first<<"\n dirpost second == "<< loc.dirpost.second <<"\n ret first == "<< loc.ret.first<< " ret second == "<<loc.ret.second<<"\nalias first ==  "<< loc.alias.first<<"alias second == "<< loc.alias.second<<"\n\n\n"<<std::endl;
     Location res(loc.path, loc.get, loc.post, loc.del, loc.cgi, loc.autoindex, loc.index, loc.dirpost, loc.ret, loc.alias);
     return (res);
 }
@@ -221,7 +195,6 @@ int addToServer(Data &servData, size_t &index, const std::string &content)
     const char  *serverInfo[] = {"server_name", "listen", "root", "body_size", "location", "error", NULL};
     size_t      indexEnd = 0, indexStart;
     size_t      i;
-    //if differend de server name cat sinon quiter si deja def
     while (index <= content.size() && content[index] != '}')
     {
         index = content.find_first_not_of(" \t", index);
@@ -232,7 +205,6 @@ int addToServer(Data &servData, size_t &index, const std::string &content)
         {
             if (index > content.size())
                 return (0) ;
-            //std::cout<<"\ncompare : "<<content.substr(index,  strlen(serverInfo[i]))<<std::endl;
             if (content.compare(index, strlen(serverInfo[i]), serverInfo[i]) == 0)
             {
                 indexStart = content.find_first_not_of(" \t", indexEnd);
@@ -245,43 +217,34 @@ int addToServer(Data &servData, size_t &index, const std::string &content)
             if (indexEnd > content.size() || indexStart > content.size())
                 break ;
         }
-        //std::cout<<"\ni == "<<i<<std::endl;
         switch(i)
         {
             case server_name:
             {
-                if (servData.name.empty())
-                {
-                    servData.name = content.substr(indexStart, indexEnd - indexStart);
-                   // std::cout<<"serv name = "<<servData.name<<std::endl;
-                    break;
-                }
-                else
-                    return (0);
+                if (!servData.name.empty())
+                    throw std::invalid_argument("multiple definition : serve_name");
+                servData.name = content.substr(indexStart, indexEnd - indexStart);
+                break;
             }
             case _listen:
             {
                 servData.listen += " " + content.substr(indexStart, indexEnd - indexStart);
-               // std::cout<<"listen = "<<servData.listen<<std::endl;
                 break;
             }
             case root:
             {
+                if (!servData.root.empty())
+                    throw std::invalid_argument("multiple definition : root");
                 servData.root = content.substr(indexStart, indexEnd - indexStart);
-               // std::cout<<"root = "<<servData.root<<std::endl;
                 break;
             }
             case body_size:
             {
-                if (servData.body.empty())
-                {
-                    servData.body = content.substr(indexStart, indexEnd - indexStart);
-					servData.bodymax = strtod(servData.body.c_str(), NULL);
-                   // std::cout<<"body = "<<servData.body<<std::endl;
-                    break;
-                }
-                else
-                    return (0);
+                if (!servData.body.empty())
+                    throw std::invalid_argument("multiple definition : body_size");
+                servData.body = content.substr(indexStart, indexEnd - indexStart);
+				servData.bodymax = strtod(servData.body.c_str(), NULL);
+                break;
             }
             case location:
             {
@@ -289,58 +252,40 @@ int addToServer(Data &servData, size_t &index, const std::string &content)
                 if (index > content.size())
                    return (0);
                 for (; content[indexEnd] && content[indexEnd] != '{'; indexEnd++)
-                {
-                   // std::cout<<"char == "<<content[indexEnd]<<std::endl;
-                }
+                    ;
                 indexEnd++;
-                //std::cout<<<<std::end;
-                //servData.loc.push_back(getLocation(index, content, indexEnd));
-                //servData.locations.push_back(parseLocation(servData.loc[0]));
-				std::string s = getLocation(index, content, indexEnd);
-				std::cout<<"location = "<<s<<std::endl;
+ 				std::string s = getLocation(index, content, indexEnd);
                 servData.locations.push_back(parseLocation(s));
                 break;
             }
             case error:
             {
-                //std::cout<<"'''''''''''''''''''''''''''"<<std::endl;
+                if (!servData.name.empty())
+                    throw std::invalid_argument("multiple definition : serve_name");
                 index = content.find_first_not_of(" \t", indexEnd);
                 if (index > content.size())
                    return (0);
                 for (; content[indexEnd] && content[indexEnd] != '{'; indexEnd++)
-                {
-                   // std::cout<<"char == "<<content[indexEnd]<<std::endl;
-                }
+                    ;
                 indexEnd++;
                 servData.error.push_back(getLocation(index, content, indexEnd));
-               // std::cout<<"err = "<<servData.error[0]<<std::endl;
                 break;
             }
             default:
             {
-                std::cout<<"////////////////////////////////////"<<std::endl;
                 std::string errorMessage = "Invalid config file: ";
                 errorMessage += std::string(content.c_str() + index, indexEnd - index);
                 throw std::invalid_argument(errorMessage);
             }
         }
-        //indexEnd = content.find_first_not_of(" \t", indexEnd);
-       // if (indexEnd > content.size())
-        //    return (0);
-       // std::cout<<"char == "<<content[indexEnd]<<std::endl;
         if (indexEnd != std::string::npos && content[indexEnd] != '}')
             index = indexEnd + 1;
         else
             index = indexEnd;
-        //std::cout<<"char == "<<content[index]<<std::endl;
     }
     index = content.find_first_not_of(" \t", index);
     if (index > content.size())
-    {
-        std::cout<<"char == "<<content[index]<<std::endl;
-        return (0);
-    }
-    //std::cout<<"char == "<<content[index]<<std::endl;
+        throw std::invalid_argument("invalid config file");
     return (1);
 }
 
@@ -349,22 +294,16 @@ bool getData(std::string &content, Data &servData, size_t &index)
     int status = 0;
     while (index <= content.size())
     {
-       // std::cout<<"len == "<<content.size()<<" content == "<<content<<" index "<<index<<std::endl;
-       // std::cout<<"la"<<std::endl;
         index = content.find_first_not_of("\n\t", index);
-        //std::cout<<"la"<<std::endl;
         if (index > content.size())
             break ;
-        //std::cout<<"comparing : "<<content.c_str() + index<<"\n\n"<<std::endl;
         if (content.compare(index, 6,"server") == 0)
         {
             index += 6;
             index = content.find_first_not_of(" \n\t", index);
             if (index > content.size())
                 return (false);
-//            std::cout<<"char = "<<content[index]<<std::endl;
             index++;
-  //          std::cout<<"char = "<<content[index]<<std::endl;
             if (content[index - 1] == '{')
             {
                 status = SERVER;
@@ -372,28 +311,15 @@ bool getData(std::string &content, Data &servData, size_t &index)
             }
         }
         index++;
-       // std::cout<<"index == "<<index<<std::endl;
     }
     while (index < content.size() && status == SERVER)
     {
-        //std::cout<<"ici1"<<std::endl;
-            //chercher les infos du serveur
-        //if (status == LOCATION)
-            //checher les infos de location //addToLocation(servData, index, content);
-        //std::cout<<"ici2"<<std::endl;
         if (status == SERVER && !addToServer(servData, index, content))
-        {
-            std::cout<<"ici3"<<std::endl;
             return (false);
-        }
-        //std::cout<<content[index]<<std::endl;
-        //std::cout<<"status == "<<status<<std::endl;
         if (content[index] == '}')
             status--;
-        //std::cout<<"status == "<<status<<std::endl;
         if (status == OUTSIDE)
             return (true);
-        //std::cout<<"ici5"<<std::endl;
     }
     return (true);
 }
@@ -438,7 +364,6 @@ std::vector<Data> parsing(const char *filename)
                 if ((!std::isspace(*str) && !std::isdigit(*str)) || nb == MAX(double)infinity() ||\
                     nb > MAX(int)max() || nb < 0 || nb != std::floor(nb))
                 {
-                    //std::cout<<"str == "<<str<<" nb == "<<nb<<std::endl;
                     std::string errorMessage = "Invalid config file: ";
                     errorMessage += servData.listen;
                     throw std::invalid_argument(errorMessage);
@@ -448,9 +373,7 @@ std::vector<Data> parsing(const char *filename)
                 str = endptr;
                 if (!*endptr)
                     break ;
-                //std::cout<<"str == "<<str<<" nb == "<<nb<<std::endl;
             }
-               // std::cout<<"data nsme = "<<servData.name<<std::endl;
                 serveurs.push_back(servData);
         }
         clearData(servData);

@@ -16,6 +16,7 @@ enum state {OUTSIDE, SERVER, LOCATION};
 enum param {server_name, _listen, root, body_size, location, error};
 enum locparam {cgi, _autoindex, _index,dir_post , ret, alias, method};
 
+
 typedef struct DataLoc
 {
     std::string path;

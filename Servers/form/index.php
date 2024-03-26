@@ -1,21 +1,7 @@
 <?php
 
-// function checkCookie($value)
-// {
-// 	$date = 0;
-// 	//recuperer la date d'expiration dans la value
-// 	if (date > time())
-// 		return (0);
-// 	else
-// 		return (1);
-// }
-
 function getLogged($test)
 {
-	fwrite(STDERR, "//////////////////////////////////////////////// \n");
-	fwrite(STDERR, "test = $test \n");
-	fwrite(STDERR, "cookie = " . getenv('HTTP_COOKIE') . "\n");
-	fwrite(STDERR, "//////////////////////////////////////////////// \n");
 	$date = 0;
 	$name = '';
 	$cookie = '';
@@ -25,64 +11,30 @@ function getLogged($test)
 	{
 		$firstCookie = explode(';', getenv('HTTP_COOKIE'))[0];
 		$info = explode('|', $firstCookie);
-		foreach (explode('|', $firstCookie) as $value) {
-			fwrite(STDERR, "val = $value \n");
-		}
 		if (!isset($info[1]) && empty($test))
-		{
-			fwrite(STDERR, "it's ////////////////\n");
 			return getIndex();
-		}
 		else
 		{
-			fwrite(STDERR, "it's not ////////////////\n");
 			$date = $info[1];
-			fwrite(STDERR, "info[0] = $info[0] \n");
-			foreach ( explode('=' ,$info[0]) as $value) {
-				fwrite(STDERR, "val = $value \n");
-			}
 			$info = explode('=' ,$info[0]);
-			fwrite(STDERR, "info[0] = $info[0] \n");
 			$cookie = $info[1];
 			$name = $info[1];
-			fwrite(STDERR, "date == " . $date . "\n");
-			fwrite(STDERR, "cookie == ". $cookie . "\n");
-			fwrite(STDERR, "name == ". $name . "\n");
 		}
 
 	}
-	// if (!empty(getenv('HTTP_COOKIE')))
-	// {
-	// 	fwrite(STDERR, "cookie = " . getenv('HTTP_COOKIE') . "\n");
-	// 	fwrite(STDERR, "cookie!!!!!!! = $firstCookie \n");
-	// 	$res = explode(' ', $firstCookie)[0];
-	// 	$name = explode('=', $res)[1];
-	// 	$cookie = $name;
-	// 	fwrite(STDERR, "value 1 = $res \n");
-	// 	$date = explode('=', explode(' ', $firstCookie)[1])[0];
-	// 	//$date = explode('=', $date)[1];
-	// 	fwrite(STDERR, "date = $date \n");
-	// }
+
 	if (!empty($test))
 	{
 		$cookie = explode('&', $test)[0];
-		fwrite(STDERR, "cook = $cookie \n");
 		$cookie = explode('=', $cookie)[1];
 		$name = $cookie;
-		fwrite(STDERR, "cook = $cookie \n");
 	}
 	$cookie = $date;
-	fwrite(STDERR, "date = $date \n");
-	fwrite(STDERR, "name = $name \n");
-	fwrite(STDERR, "date = $date > " . (time() + 30 > $date ? 'true' : 'false') . "\n");
 	$dateCount = $date?($date - time()):30;
 	if (empty($name))
 		return getIndex("<div>please enter an username</div>");
 	if ($date && $dateCount < 0)
-	{
-		fwrite(STDERR, "il est passe par ici\n");
 		return getIndex("<div>invalid request, please try again</div>");
-	}
 	else
 	{
 		$body = '<!DOCTYPE html>
@@ -126,19 +78,19 @@ function getLogged($test)
 		<div class="container">
 		<h2>hello ';
 		$body.=$name;
-		fwrite(STDERR, "date = $date \n");
-		fwrite(STDERR, "date = $date \n");
 		$body.='</h2><p>still connected for '. $dateCount .' s</p></body></html>';
-		//fwrite(STDERR, "time???? = $date\n");
-		//fwrite(STDERR, "time???? = " . time()+30 . "\n");
-		//fwrite(STDERR, "\n\n\nheader = $header \n\n\n");
 		$date = ($date ? $date : time() + 30);
 		$header = "HTTP/1.1 200 OK\r\n";
+		$header .= "Date: " . gmdate('D, d M Y H:i:s \C\E\T', time()) . "\r\n";
 		$header .= "Allow: GET\r\n";
 		$header .= "Content-Type: text/html; charset=utf-8\r\n";
-		$header .= "Set-Cookie: auth=" . $name . '|' . $date . "; expires=" . gmdate('D, d M Y H:i:s \G\M\T', $date) . ";\r\n path=/index.php\r\n";
+		$header .= "Set-Cookie: auth=" . $name . '|' . $date . "; expires=" . gmdate('D, d M Y H:i:s \G\M\T', $date) . ";\r\n";
 		$header .= "Content-Length: " . strlen($body) . "\r\n\r\n";
-		fwrite(STDERR, "header == $header");
+		if (null !== getenv('PORT') && null !== getenv('FD'))
+		{
+			fwrite(STDERR, "[*] Response's header sent on port " . getenv('PORT') . " (fd " . getenv('FD') . ")\n");
+			fwrite(STDERR, $header);
+		}
 		return ($header.$body);
 	}
 }
@@ -209,50 +161,25 @@ function getIndex($ARG='')
 	</div></body>
 	</html>';
 	$header = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\ncharset=utf-8\r\n";
-	// if (!empty($ARG))
-	// {
-	// 	fwrite(STDERR, "iciiiiiiiiiiiiiiiiiiiii\n");
-	// 	fwrite(STDERR, "ARG = $ARG" );
-	// 	$header .= "Set-Cookie: auth= ;";
-	// 	$header .= "expires=" . (time() - 36000) . ";\r\n";
-	// }
+	$header .= "Date: " . gmdate('D, d M Y H:i:s \C\E\T', time()) . "\r\n";
 	$header .= "Content-Length: " . strlen($body) . "\r\n\r\n";
-	fwrite(STDERR, "header == $header");
+	if (null !== getenv('PORT') && null !== getenv('FD'))
+	{
+		fwrite(STDERR, "[*] Response's header sent on port " . getenv('PORT') . " (fd " . getenv('FD') . ")\n");
+		fwrite(STDERR, $header);
+	}
 	return ($header.$body."\n");
 }
 
-// <div class="container">';
-	// if ($ARG)
-	// 	$body .= $ARG;
-	// $body .= '<h2>Username</h2>
-	// <input type="text" name="username" id="username" placeholder="Entrez votre nom d\'utilisateur">
-
-	// <h2>Password</h2>
-	// <input type="password" name="password" id="password" placeholder="Entrez votre mot de passe">
-
-	// <input type="submit" value="Connexion">
-	// </div>
-
 function main()
 {
-	// foreach ($_ENV as $key => $value) {
-	// 	echo "$key : $value <br>";
-	// }
-//	$test = getenv();
-//	foreach ($test as $value) {
-//		fwrite(STDERR, "value = $value");
-//	}
-	$truc = '';
-	// fwrite(STDERR, "?????????????????\n");
+
 	foreach ($_ENV as $key => $value) {
 		fwrite(STDERR, "Clé: $key, Valeur: $value\n");
 	}
 
 	$in = file_get_contents('php://stdin');
-	// while (!feof(STDIN)) {
-	// 	$in .= fgets(STDIN);
-	// }
-		if (!empty($in) && $in[strlen($in) - 1] == "\n")
+	if (!empty($in) && $in[strlen($in) - 1] == "\n")
 		$in = substr($in, 0, -1);
 	if (!getenv('HTTP_COOKIE') && empty($in))
 		echo getIndex();

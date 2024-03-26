@@ -18,35 +18,6 @@ Cgi::Cgi(Manager &man, const std::vector<std::string> &env) : _man(man)
 		throw std::runtime_error("cgi : pipe error");
 }
 
-// Cgi::Cgi(const Cgi &cgi) : _env(NULL), _man(cgi._man)
-// {
-// 	*this = cgi;
-// }
-
-// Cgi &Cgi::operator=(const Cgi &rhs)
-// {
-// 	if (this != &rhs)
-// 	{
-// 		int i;
-// 		_pid = rhs._pid;
-// 		_pipeIn[0] = rhs._pipeIn[0];
-// 		_pipeIn[1] = rhs._pipeIn[0];
-// 		_pipeOut[0] =rhs._pipeOut[0];
-// 		_pipeOut[1] =rhs._pipeOut[0];
-// 		int size;
-// 		size = 0;
-// 		if (rhs._env)
-// 			for (size = 0; rhs._env[size];size++);
-// 		if (this->_env)
-// 			delete (this->_env);
-// 		_env = new char*[(size + 1) * sizeof(char *)];
-// 		for (i = 0; i < size; i++)
-// 			_env[i] = rhs._env[i];
-// 		_env[i] = NULL;
-// 	}
-// 	return (*this);
-// }
-
 Cgi::~Cgi()
 {
 	if (_pid > 0)
@@ -111,22 +82,22 @@ void Cgi::launchCgi(const std::string &f)
 		if (cgiType == PHP)
 		{
 			const char *args[] = {"php" ,f.c_str(), NULL};
-			if (execve("/usr/bin/php", const_cast<char* const*>(args), _env) == -1)
-				std::cerr<<"fail to execute php cgi"<<std::endl;
+			execve("/usr/bin/php", const_cast<char* const*>(args), _env);
 		}
 		else if (cgiType == RUBY)
 		{
 			const char *args[] = {"ruby" ,f.c_str(), NULL};
-			if (execve("/usr/bin/ruby", const_cast<char* const*>(args), _env) == -1)
-				std::cerr<<"fail to execute ruby cgi"<<std::endl;
+			execve("/usr/bin/ruby", const_cast<char* const*>(args), _env);
 		}
 		else if (cgiType == PYTHON)
 		{
 			const char *args[] = {"python" ,f.c_str(), NULL};
-			if (execve("/usr/bin/python", const_cast<char* const*>(args), _env) == -1)
-				std::cerr<<"fail to execute python cgi"<<std::endl;
+			execve("/usr/bin/python", const_cast<char* const*>(args), _env);
 		}
-		exit(5);
+		if (access(f.c_str(), F_OK) != 0)
+			exit(4);
+		if (access(f.c_str(), X_OK) != 0)
+			exit(3);
 	}
 	if (_pid == -1)
 		throw std::runtime_error("cgi : fail to fork");
