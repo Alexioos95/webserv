@@ -98,6 +98,7 @@ void Cgi::launchCgi(const std::string &f)
 			exit(4);
 		if (access(f.c_str(), X_OK) != 0)
 			exit(3);
+		exit(5);
 	}
 	if (_pid == -1)
 		throw std::runtime_error("cgi : fail to fork");
