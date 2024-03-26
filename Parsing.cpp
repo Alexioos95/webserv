@@ -263,8 +263,8 @@ int addToServer(Data &servData, size_t &index, const std::string &content)
             }
             case error:
             {
-                if (!servData.name.empty())
-                    throw std::invalid_argument("multiple definition : serve_name");
+                if (!servData.error.empty())
+                    throw std::invalid_argument("multiple definition : error");
                 index = content.find_first_not_of(" \t", indexEnd);
                 if (index > content.size())
                    return (0);

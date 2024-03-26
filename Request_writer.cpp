@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request_writer.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
+/*   By: madaguen <madaguen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/26 10:06:45 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/26 11:02:46 by madaguen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -153,6 +153,11 @@ void	Request::processCGI(void)
 		{
 			if (WIFEXITED(status))
 				status = (WEXITSTATUS(status));
+			if (status > 0)
+			{
+				this->_status = "404 Not Found";
+				return ;
+			}
 			if (status == 3)
 			{
 				this->_status = "403 Forbidden";

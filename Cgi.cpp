@@ -68,7 +68,6 @@ void Cgi::launchCgi(const std::string &f)
 	_pid = fork();
 	if (_pid == 0)
 	{
-		_man.shutdown(false);
 		if (_pipeOut[0] > -1)
 			close(_pipeOut[0]);
 		if (_pipeIn[1] > -1)
@@ -79,6 +78,7 @@ void Cgi::launchCgi(const std::string &f)
 			close(_pipeIn[0]);
 		if (_pipeOut[1] > -1)
 			close(_pipeOut[1]);
+		_man.shutdown(false);
 		if (cgiType == PHP)
 		{
 			const char *args[] = {"php" ,f.c_str(), NULL};
@@ -94,10 +94,6 @@ void Cgi::launchCgi(const std::string &f)
 			const char *args[] = {"python" ,f.c_str(), NULL};
 			execve("/usr/bin/python", const_cast<char* const*>(args), _env);
 		}
-		if (access(f.c_str(), F_OK) != 0)
-			exit(4);
-		if (access(f.c_str(), X_OK) != 0)
-			exit(3);
 		exit(5);
 	}
 	if (_pid == -1)
@@ -123,25 +119,6 @@ int Cgi::getFdRead()
 {
 	return (_pipeOut[0]);
 }
-
-// std::vector<char> Cgi::getOutputCgi()
-// {
-// 	char	buf[2048];
-// 	int	 readRes;
-// 	std::vector<char>   res;
-// 	std::vector<char>::iterator   it;
-
-// 	while (_pipeOut[0] != -1 && (readRes = read(_pipeOut[0], buf, 2048)) > 0)
-// 	{
-// 		for (int i = 0; i < readRes; i++)
-// 		{
-// 			res.push_back(buf[i]);
-// 		}
-// 	}
-// 	if (readRes == -1)
-// 		throw std::runtime_error("cgi : fail to read");
-// 	return (res);
-// }
 
 int Cgi::getPid()
 {
