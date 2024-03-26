@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/26 09:28:18 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/26 10:06:45 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -147,7 +147,7 @@ void	Request::processCGI(void)
 			if (!this->_body.empty())
 				return ;
 		}
-		if (!this->_inreadcgi)
+		if (this->_cgi->getPid() == -1)
 			this->_cgi->launchCgi(this->_filepath);
 		if (this->_inreadcgi || waitpid(this->_cgi->getPid(), &status, WNOHANG) > 0)
 		{
@@ -161,6 +161,11 @@ void	Request::processCGI(void)
 			else if (status == 4)
 			{
 				this->_status = "404 Not Found";
+				return ;
+			}
+			else if (status == 5)
+			{
+				this->_status = "500 Internal Server Error";
 				return ;
 			}
 			bytes = read(this->_cgi->getFdRead(), buffer, 4096);
