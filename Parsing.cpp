@@ -247,6 +247,9 @@ int addToServer(Data &servData, size_t &index, const std::string &content)
                     throw std::invalid_argument("multiple definition : body_size");
                 servData.body = content.substr(indexStart, indexEnd - indexStart);
 				servData.bodymax = strtod(servData.body.c_str(), NULL);
+                if (servData.bodymax < 0 || static_cast<int>(servData.bodymax) < servData.bodymax || servData.bodymax == MAX(double)infinity() ||\
+                   servData.bodymax > MAX(int)max() || servData.bodymax < 0)
+                        throw std::invalid_argument("invalid body_size");
                 break;
             }
             case location:
@@ -295,26 +298,22 @@ int addToServer(Data &servData, size_t &index, const std::string &content)
 bool getData(std::string &content, Data &servData, size_t &index)
 {
     int status = 0;
-    while (index <= content.size())
+
+    index = content.find_first_not_of("\n\t", index);
+    if (index > content.size())
+        throw std::invalid_argument("invalid file");
+    if (content.compare(index, 6,"server") == 0)
     {
-        index = content.find_first_not_of("\n\t", index);
+        index += 6;
+        index = content.find_first_not_of(" \n\t", index);
         if (index > content.size())
-            break ;
-        if (content.compare(index, 6,"server") == 0)
-        {
-            index += 6;
-            index = content.find_first_not_of(" \n\t", index);
-            if (index > content.size())
-                return (false);
-            index++;
-            if (content[index - 1] == '{')
-            {
-                status = SERVER;
-                break;
-            }
-        }
+            return (false);
         index++;
+        if (content[index - 1] == '{')
+            status = SERVER;
     }
+    if (status != SERVER && index < content.size())
+        throw std::invalid_argument("ici invalid file");
     while (index < content.size() && status == SERVER)
     {
         if (status == SERVER && !addToServer(servData, index, content))
@@ -337,7 +336,7 @@ void    clearData(Data &data)
     data.locations.clear();
     data.error.clear();
     data.loc.clear();
-    data.bodymax = 0;
+    data.bodymax = -1;
     data.good = true;
 }
 
@@ -345,18 +344,21 @@ std::vector<Data> parsing(const char *filename)
 {
     std::vector<Data>   serveurs;
     Data                servData;
-    std::ifstream       file(filename);
     std::string         content, line;
     size_t              index = 0;
 
+    std::ifstream       file(filename);
     clearData(servData);
     while (std::getline(file, line))
         content += line;
+    if (content.empty())
+        throw   std::invalid_argument("invalid file");
     while (index < content.size())
     {
+        clearData(servData);
         getData(content, servData, index);
-        if (servData.name.empty())
-            servData.good = false;
+        if (servData.name.empty() || servData.listen.empty() || servData.root.empty() || servData.bodymax < 0)
+            throw std::invalid_argument("incomplete server");
         if (servData.good)
         {
             double nb;
@@ -383,63 +385,8 @@ std::vector<Data> parsing(const char *filename)
                 serveurs.push_back(servData);
         }
         clearData(servData);
+        index = content.find_first_not_of(" \t", index);
+        index++;
     }
     return (serveurs);
 }
-
-// int main()
-// {
-//     try
-//     {
-//         std::vector<Data> t = parsing("testconfig");
-//         if (t.empty())
-//             std::cout<<"youhou"<<std::endl;
-//         else
-//         {
-//             for (int i = 0; i<t.size();i++)
-//             {
-//                 std::cout<<"server["<<i<<"] name "<<t[i].name<<std::endl;
-//                 for(int j = 0; j < t[i].ports.size(); j++)
-//                     std::cout<<"server["<<i<<"] port["<<j<<"] "<<t[i].ports[j]<<", "<<std::endl;
-//                 std::cout<<"server["<<i<<"] root "<<t[i].root<<std::endl;
-//                 std::cout<<"server["<<i<<"] body "<<t[i].body<<std::endl;
-//                 for(int j = 0; j < t[i].loc.size(); j++)
-//                     std::cout<<"server["<<i<<"] location["<<j<<"] "<<t[i].loc[j]<<std::endl;
-//                 for(int j = 0; j < t[i].error.size(); j++)
-//                     std::cout<<"server["<<i<<"] error["<<j<<"] "<<t[i].error[j]<<std::endl;
-//             }
-//         }
-//     }
-//     catch(std::exception &e)
-//     {
-//         std::cout<<e.what()<<std::endl;
-//     }
-// }
-//  main()
-// {
-//     try
-//     {
-//         std::vector<Data> t = parsing("testconfig");
-//         if (t.empty())
-//             std::cout<<"youhou"<<std::endl;
-//         else
-//         {
-//             for (int i = 0; i<t.size();i++)
-//             {
-//                 std::cout<<"server["<<i<<"] name "<<t[i].name<<std::endl;
-//                 for(int j = 0; j < t[i].ports.size(); j++)
-//                     std::cout<<"server["<<i<<"] port["<<j<<"] "<<t[i].ports[j]<<", "<<std::endl;
-//                 std::cout<<"server["<<i<<"] root "<<t[i].root<<std::endl;
-//                 std::cout<<"server["<<i<<"] body "<<t[i].body<<std::endl;
-//                 for(int j = 0; j < t[i].loc.size(); j++)
-//                     std::cout<<"server["<<i<<"] location["<<j<<"] "<<t[i].loc[j]<<std::endl;
-//                 for(int j = 0; j < t[i].error.size(); j++)
-//                     std::cout<<"server["<<i<<"] error["<<j<<"] "<<t[i].error[j]<<std::endl;
-//             }
-//         }
-//     }
-//     catch(std::exception &e)
-//     {
-//         std::cout<<e.what()<<std::endl;
-//     }
-// }
