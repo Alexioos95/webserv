@@ -372,7 +372,11 @@ std::vector<Data> parsing(const char *filename)
                     throw std::invalid_argument(errorMessage);
                 }
                 else
-                    servData.ports.push_back(nb);
+                {
+                    std::vector<int>::iterator it = servData.ports.begin();
+                    if (std::find(servData.ports.begin(), servData.ports.end(), nb) ==  servData.ports.end())
+                        servData.ports.push_back(nb);
+                }
                 str = endptr;
                 if (!*endptr)
                     break ;

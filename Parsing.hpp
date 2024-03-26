@@ -2,6 +2,7 @@
 #define PARSING_HPP
 
 #include <vector>
+#include <algorithm>
 #include <map>
 #include <fstream>
 #include <iostream>
