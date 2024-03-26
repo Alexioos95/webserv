@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
+/*   By: madaguen <madaguen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/22 08:54:12 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/26 08:51:29 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/26 13:46:32 by madaguen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,7 +120,7 @@ class Request
 
 void		*ft_memset(void *s, int c, size_t n);
 std::string	itoa(int nbi);
-int			autoindex(const char *directory_name, std::string &res);
+int			autoindex(const char *directory_name, std::string root, std::string &res);
 void		printvector(std::vector<char> v, int minus);
 
 #endif

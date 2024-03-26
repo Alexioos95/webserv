@@ -6,7 +6,7 @@
 /*   By: madaguen <madaguen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/26 13:03:38 by madaguen         ###   ########.fr       */
+/*   Updated: 2024/03/26 13:45:22 by madaguen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,7 +50,7 @@ void	Request::parsing(void)
 			{
 				std::string tmp;
 
-				if (autoindex(this->_dir.c_str(), tmp))
+				if (autoindex(this->_dir.c_str(), this->_serv.getRoot(), tmp))
 				{
 					this->_bodyresponse.insert(this->_bodyresponse.end(), tmp.begin(), tmp.end());
 					this->_contentlength = this->_bodyresponse.size();

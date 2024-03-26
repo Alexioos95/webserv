@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.cpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
+/*   By: madaguen <madaguen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/04 14:35:24 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/26 12:30:52 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/26 13:50:28 by madaguen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,9 +49,12 @@ std::string	itoa(int nbi)
 	return (nb);
 }
 
-int	autoindex(const char *directory_name, std::string &res) {
+int	autoindex(const char *directory_name, std::string root, std::string &res) {
 	DIR* directory = opendir(directory_name);
 	std::string fullPath;
+	std::string	relative = "/Servers/" + root;
+	size_t len = relative.length();
+	relative = std::string(directory_name).substr(len, strlen(directory_name) - len);
 	res = "<!DOCTYPE html>\n<html lang=\"fr\">\n\t<head>\n\t<meta charset=\"UTF-8\">\n\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\t<title>Index des fichiers</title>\n\t</head>\n<body>\n\t<body>\n\t\t<ul>\n</html>";
 	struct dirent *entry;
 	if (directory == NULL) {
@@ -68,9 +71,9 @@ int	autoindex(const char *directory_name, std::string &res) {
 			if (stat(fullPath.c_str(), &fileStat) != -1)
 			{
 				if (S_ISDIR(fileStat.st_mode))
-					res+="\t\t\t<li><a href=\"" + en + "\"> " + en + " </a></li>\n";
+					res+="\t\t\t<li><a href=\"" + relative + "/" + en + "\"> " + en + " </a></li>\n";
 				else
-					res+="\t\t\t<li><a href=\"" + en + "\"> " + en + " </a></li>\n";
+					res+="\t\t\t<li><a href=\"" + relative + "/" + en + "\"> " + en + " </a></li>\n";
 			}
 		}
 	}
