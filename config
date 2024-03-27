@@ -2,7 +2,7 @@ server {
 	server_name qr.code;
 	listen 8080 8081 8082;
 	root /qr/;
-	error /error_pages {
+	error /error_page {
 		403 403.html;
 		404 404.html;
 	}

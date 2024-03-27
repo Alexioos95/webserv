@@ -219,14 +219,14 @@ std::map<std::string, std::string> parseError(const std::string &error)
         indexEnd = error.find_first_of(" \t", indexStart);
         if (indexEnd >= error.size())
             throw std::invalid_argument(std::string("invalid config file : ") + error);
-        cle = error.substr(indexStart, indexEnd - indexStart);      
+        cle = error.substr(indexStart, indexEnd - indexStart);
         indexStart = error.find_first_not_of(" \t", indexEnd);
         if (indexEnd >= error.size())
             throw std::invalid_argument(std::string("invalid config file : ") + error);
         indexEnd = error.find_first_of("; \t", indexStart);
         if (indexEnd >= error.size())
             throw std::invalid_argument(std::string("invalid config file : ") + error);
-        value = error.substr(indexStart, (indexEnd) - indexStart); 
+        value = error.substr(indexStart, (indexEnd) - indexStart);
         indexEnd++;
         if (allNum(cle) && ret.find(cle) == ret.end())
             ret[cle] = path + "/" + value;
@@ -383,6 +383,7 @@ void    clearData(Data &data)
     data.body.clear();
     data.locations.clear();
     data.error.clear();
+    data.errors.clear();
     data.loc.clear();
     data.bodymax = -1;
     data.good = true;
