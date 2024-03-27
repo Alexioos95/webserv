@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request_writer.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: madaguen <madaguen@student.42.fr>          +#+  +:+       +#+        */
+/*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/26 13:45:22 by madaguen         ###   ########.fr       */
+/*   Updated: 2024/03/27 09:13:36 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -99,7 +99,7 @@ int	Request::processing(void)
 	{
 		std::string tmp;
 
-		if (this->_status == "400 Bad Request")
+		if (this->_status == "400 Bad Request" || this->_status == "500 Internal Server Error")
 			this->_client->setKeepAlive(false);
 		if (this->_status != "301 Moved Permanently")
 			tmp = this->error();
