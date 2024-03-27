@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:05:30 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/27 10:32:10 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/26 11:29:14 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,7 +52,7 @@ int	main(int argc, char **argv)
 			std::cerr << "[!] Critical error in the program: " << e.what();
 			if (errno != 0)
 				std::cerr << strerror(errno);
-			std::cerr << "\n[*] All connections have been closed." << std::endl;
+			std::cerr << "\n[-] All connection have been closed." << std::endl;
 			ret = 1;
 		}
 		std::cout << asciiart() << std::endl;
