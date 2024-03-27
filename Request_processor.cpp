@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/21 09:49:09 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/27 11:54:08 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/27 11:55:08 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -248,8 +248,6 @@ std::string	Request::error(void)
 		error = this->_status.substr(0, 3);
 		while (it != m.end())
 		{
-			std::cout << (*it).first << std::endl;
-			std::cout << (*it).second << std::endl;
 			if ((*it).first == error)
 			{
 				root = this->_serv.getRoot();
