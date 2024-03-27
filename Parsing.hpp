@@ -42,7 +42,7 @@ typedef struct Data
     std::vector<Location> locations;
     std::vector<std::string> loc;
     std::map<std::string, std::string> errors;
-    std::vector<std::string> error;
+    std::string error;
     int     bodymax;
     bool    good;
 }Data;

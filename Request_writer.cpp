@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 10:56:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/26 12:26:36 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/27 09:54:48 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,7 +50,7 @@ void	Request::parsing(void)
 			{
 				std::string tmp;
 
-				if (autoindex(this->_dir.c_str(), tmp))
+				if (autoindex(this->_dir.c_str(), this->_serv.getRoot(), tmp))
 				{
 					this->_bodyresponse.insert(this->_bodyresponse.end(), tmp.begin(), tmp.end());
 					this->_contentlength = this->_bodyresponse.size();
@@ -99,7 +99,7 @@ int	Request::processing(void)
 	{
 		std::string tmp;
 
-		if (this->_status == "400 Bad Request")
+		if (this->_status == "400 Bad Request" || this->_status == "500 Internal Server Error")
 			this->_client->setKeepAlive(false);
 		if (this->_status != "301 Moved Permanently")
 			tmp = this->error();
@@ -178,16 +178,13 @@ void	Request::processCGI(void)
 			}
 		}
 	}
-	catch (int status)
+	catch (const std::string &error)
 	{
-		if (status == 403)
-			this->_status = "403 Forbidden";
-		if (status == 404)
-			this->_status = "404 Not Found";
+		this->_status = error;
 	}
 	catch (const std::exception &e)
 	{
-		std::cerr << "[-] Couldn't execute a CGI for client (fd " << this->_client->getFD() << ") on port " << this->_client->getPort() << "\n" << std::endl;
+		std::cerr << "[!] Couldn't execute a CGI for client (fd " << this->_client->getFD() << ") on port " << this->_client->getPort() << "\n" << std::endl;
 		this->_status = "500 Internal Server Error";
 	}
 }

@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/21 09:49:09 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/26 12:21:27 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/27 09:15:05 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,7 +53,6 @@ std::string	Request::openf(void)
 std::string	Request::del(void)
 {
 	struct stat st;
-	std::string	cmd;
 
 	ft_memset(&st, 0, sizeof(st));
 	if (access(this->_filepath.c_str(), F_OK) == -1)
