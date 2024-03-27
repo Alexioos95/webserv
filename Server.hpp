@@ -6,7 +6,7 @@
 /*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/12 12:00:43 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/25 10:55:11 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/27 10:28:14 by apayen           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,6 @@ class Server
 {
 	public:
 	// Constructors and Destructor
-		Server(void);
 		Server(std::string name, std::string root, std::vector<int> ports, std::map<std::string, std::string> errors, \
 			std::vector<Location> locations, int bodymax, std::map<int, int> &m);
 		Server(Server const &rhs);
