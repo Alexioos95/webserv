@@ -223,10 +223,11 @@ std::map<std::string, std::string> parseError(const std::string &error)
         indexStart = error.find_first_not_of(" \t", indexEnd);
         if (indexEnd >= error.size())
             throw std::invalid_argument(std::string("invalid config file : ") + error);
-        indexEnd = error.find_first_of(" \t", indexStart);
+        indexEnd = error.find_first_of("; \t", indexStart);
         if (indexEnd >= error.size())
             throw std::invalid_argument(std::string("invalid config file : ") + error);
-        value = error.substr(indexStart, (indexEnd - 1) - indexStart); 
+        value = error.substr(indexStart, (indexEnd) - indexStart); 
+        indexEnd++;
         if (allNum(cle) && ret.find(cle) == ret.end())
             ret[cle] = path + "/" + value;
         else
@@ -293,7 +294,7 @@ int addToServer(Data &servData, size_t &index, const std::string &content)
                     throw std::invalid_argument("multiple definition : body_size");
                 servData.body = content.substr(indexStart, indexEnd - indexStart);
 				servData.bodymax = strtod(servData.body.c_str(), NULL);
-                if (servData.bodymax < 0 || static_cast<int>(servData.bodymax) < servData.bodymax || servData.bodymax == MAX(double)infinity() ||\
+                if (!allNum(servData.body) || servData.bodymax < 0 || static_cast<int>(servData.bodymax) < servData.bodymax || servData.bodymax == MAX(double)infinity() ||\
                    servData.bodymax > MAX(int)max() || servData.bodymax < 0)
                         throw std::invalid_argument("invalid body_size");
                 break;
@@ -322,10 +323,6 @@ int addToServer(Data &servData, size_t &index, const std::string &content)
                 indexEnd++;
                 servData.error = getLocation(index, content, indexEnd);
                 servData.errors = parseError(servData.error);
-                std::map<std::string, std::string>::iterator it;
-                for (it = servData.errors.begin(); it != servData.errors.end(); ++it) {
-                    std::cout << "Clé :" << it->first << ", Valeur :" << it->second <<"|"<< std::endl;
-                }
                 break;
             }
             default:

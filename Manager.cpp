@@ -6,7 +6,7 @@
 /*   By: madaguen <madaguen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/18 12:20:04 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/26 14:26:43 by madaguen         ###   ########.fr       */
+/*   Updated: 2024/03/27 11:32:18 by madaguen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -229,7 +229,6 @@ void	Manager::defaultconfig(void)
 		this->shutdown(true);
 		throw (SigintException());
 	}
-	std::cout << std::endl;
 }
 
 void	Manager::parse(char *config)
@@ -266,7 +265,6 @@ void	Manager::parse(char *config)
 		std::cerr << "[!] Critical error occured while parsing the config file: " << e.what() << std::endl;
 		throw (SigintException());
 	}
-	std::cout << std::endl;
 }
 
 void	Manager::run(void)

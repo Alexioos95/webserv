@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: apayen <apayen@student.42.fr>              +#+  +:+       +#+        */
+/*   By: madaguen <madaguen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/12 09:05:30 by apayen            #+#    #+#             */
-/*   Updated: 2024/03/26 11:29:14 by apayen           ###   ########.fr       */
+/*   Updated: 2024/03/27 11:31:13 by madaguen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@ int	main(int argc, char **argv)
 		else if (argc >= 2)
 		{
 			if (argc == 2)
-				std::cout << "Loading configuration file..." << std::endl;
+				std::cout << "Loading configuration file...\n" << std::endl;
 			else if (argc >= 3)
 				std::cout << "Multiple configuration files were given in argument. Only the first one will be loaded. Loading..." << std::endl;
 			mng.parse(argv[1]);
